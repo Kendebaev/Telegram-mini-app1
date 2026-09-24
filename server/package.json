@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "bot": "tsx src/bot.ts",
+    "bot:webhook": "tsx src/bot.ts --webhook",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:push": "prisma db push",
