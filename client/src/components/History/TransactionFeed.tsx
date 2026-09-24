@@ -25,14 +25,15 @@ function formatDateGroup(dateStr: string): string {
     date.getMonth() === yesterday.getMonth() &&
     date.getFullYear() === yesterday.getFullYear();
 
-  if (isToday) return 'Today';
-  if (isYesterday) return 'Yesterday';
+  if (isToday) return 'TODAY';
+  if (isYesterday) return 'YESTERDAY';
 
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
+  return date
+    .toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    })
+    .toUpperCase();
 }
 
 function formatTime(dateStr: string): string {
@@ -51,12 +52,12 @@ export const TransactionFeed: React.FC = () => {
   if (transactions.length === 0) {
     return (
       <GlassCard className="p-8 text-center my-4 space-y-3">
-        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/20">
+        <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto border border-indigo-200/60 dark:border-indigo-500/20">
           <SearchX size={24} />
         </div>
         <div>
-          <h4 className="font-bold text-sm text-white">No Transactions Found</h4>
-          <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+          <h4 className="font-bold text-sm text-slate-900 dark:text-white">No Transactions Found</h4>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xs mx-auto">
             Try adjusting your search terms, date range, or category filters.
           </p>
         </div>
@@ -66,7 +67,7 @@ export const TransactionFeed: React.FC = () => {
             haptic.impact('light');
             resetFilters();
           }}
-          className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-xs font-semibold text-white active:scale-95 transition-all"
+          className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.12] text-xs font-semibold text-slate-800 dark:text-white active:scale-95 transition-all"
         >
           Reset All Filters
         </button>
@@ -85,7 +86,7 @@ export const TransactionFeed: React.FC = () => {
   });
 
   return (
-    <div className="space-y-4 pb-20">
+    <div className="space-y-4 pb-24">
       {Object.entries(grouped).map(([dateGroup, items]) => {
         // Calculate day net total
         const dayNet = items.reduce((sum, item) => {
@@ -93,15 +94,15 @@ export const TransactionFeed: React.FC = () => {
         }, 0);
 
         return (
-          <div key={dateGroup} className="space-y-2">
+          <div key={dateGroup} className="space-y-1.5">
             {/* Date Group Header */}
-            <div className="flex items-center justify-between px-2 text-xs">
-              <span className="font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between px-2 text-[11px]">
+              <span className="font-bold tracking-wider text-slate-500 dark:text-zinc-400">
                 {dateGroup}
               </span>
               <span
                 className={`font-semibold tabular-nums ${
-                  dayNet >= 0 ? 'text-emerald-400' : 'text-slate-400'
+                  dayNet >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-zinc-400'
                 }`}
               >
                 Net: {dayNet >= 0 ? '+' : ''}
@@ -109,8 +110,8 @@ export const TransactionFeed: React.FC = () => {
               </span>
             </div>
 
-            {/* Transactions Card List */}
-            <div className="space-y-1.5">
+            {/* Sleek Grouped List Container with subtle dividers */}
+            <div className="rounded-3xl overflow-hidden bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] divide-y divide-slate-100 dark:divide-white/[0.05] transition-colors duration-200">
               {items.map((tx) => {
                 const cat = tx.category || getCategoryById(tx.category_id);
                 const isIncome = tx.type === 'income';
@@ -122,50 +123,50 @@ export const TransactionFeed: React.FC = () => {
                       haptic.selection();
                       setSelectedTransaction(tx);
                     }}
-                    className="glass-card p-3 rounded-2.5xl flex items-center justify-between cursor-pointer active:scale-[0.985] transition-all hover:border-white/20"
+                    className="p-3.5 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/[0.04] transition-colors duration-150"
                   >
                     {/* Left: Category Icon & Metadata */}
                     <div className="flex items-center space-x-3 min-w-0 pr-2">
                       <div
-                        className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xs"
                         style={{
-                          backgroundColor: `${cat?.color || '#818CF8'}25`,
+                          backgroundColor: `${cat?.color || '#818CF8'}18`,
                           color: cat?.color || '#818CF8',
                         }}
                       >
                         <CategoryIcon
                           name={cat?.icon || (isIncome ? 'PlusCircle' : 'MoreHorizontal')}
-                          size={20}
+                          size={19}
                           color={cat?.color}
                         />
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs font-bold text-white truncate">
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
                             {cat?.name || (isIncome ? 'Other Income' : 'Other Expense')}
                           </span>
-                          <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                          {/* Payment method micro-icon */}
+                          <span className="text-slate-400 dark:text-zinc-500" title={tx.payment_method}>
                             {tx.payment_method === 'Cash' ? (
-                              <Banknote size={10} />
+                              <Banknote size={12} className="stroke-[2.2]" />
                             ) : (
-                              <CreditCard size={10} />
+                              <CreditCard size={12} className="stroke-[2.2]" />
                             )}
-                            {tx.payment_method}
                           </span>
                         </div>
 
-                        {/* Note & Tags */}
-                        <div className="text-[11px] text-slate-400 truncate mt-0.5 flex items-center gap-1.5">
+                        {/* Timestamp, Note & Hashtags */}
+                        <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5 flex items-center gap-1.5">
                           <span>{formatTime(tx.date)}</span>
                           {tx.note && (
                             <>
                               <span>•</span>
-                              <span className="text-slate-300 truncate">{tx.note}</span>
+                              <span className="text-slate-600 dark:text-zinc-300 truncate">{tx.note}</span>
                             </>
                           )}
                           {tx.hashtags && tx.hashtags.length > 0 && (
-                            <span className="text-indigo-400 font-mono text-[10px]">
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 font-medium">
                               #{tx.hashtags[0]}
                             </span>
                           )}
@@ -177,7 +178,7 @@ export const TransactionFeed: React.FC = () => {
                     <div className="text-right flex-shrink-0 pl-3">
                       <span
                         className={`text-sm font-extrabold tabular-nums tracking-tight ${
-                          isIncome ? 'text-emerald-400' : 'text-rose-400'
+                          isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                         }`}
                       >
                         {isIncome ? '+' : '-'}

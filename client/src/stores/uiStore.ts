@@ -16,6 +16,7 @@ interface UIState {
   activeTab: ActiveTab;
   isAddTransactionOpen: boolean;
   isManageCategoriesOpen: boolean;
+  isSettingsOpen: boolean;
   selectedTransactionForDetail: Transaction | null;
   editingTransaction: Transaction | null;
   preselectedTransactionType: TransactionType;
@@ -27,6 +28,8 @@ interface UIState {
   closeAddTransaction: () => void;
   openManageCategories: () => void;
   closeManageCategories: () => void;
+  openSettings: () => void;
+  closeSettings: () => void;
   setSelectedTransaction: (tx: Transaction | null) => void;
   setFilterType: (type: 'all' | 'expense' | 'income') => void;
   setFilterCategory: (categoryId: string) => void;
@@ -42,6 +45,7 @@ export const useUIStore = create<UIState>((set) => ({
   activeTab: 'dashboard',
   isAddTransactionOpen: false,
   isManageCategoriesOpen: false,
+  isSettingsOpen: false,
   selectedTransactionForDetail: null,
   editingTransaction: null,
   preselectedTransactionType: 'expense',
@@ -66,6 +70,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   openManageCategories: () => set({ isManageCategoriesOpen: true }),
   closeManageCategories: () => set({ isManageCategoriesOpen: false }),
+
+  openSettings: () => set({ isSettingsOpen: true }),
+  closeSettings: () => set({ isSettingsOpen: false }),
 
   setSelectedTransaction: (tx) => set({ selectedTransactionForDetail: tx }),
 

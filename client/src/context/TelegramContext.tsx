@@ -40,6 +40,8 @@ interface TelegramContextValue {
     offClick: (cb: () => void) => void;
     isVisible: boolean;
   };
+  themeMode: 'dark' | 'light' | 'system';
+  setThemeMode: (mode: 'dark' | 'light' | 'system') => void;
   toggleTheme: () => void;
   closeApp: () => void;
 }
@@ -55,6 +57,12 @@ const TelegramContext = createContext<TelegramContextValue | undefined>(undefine
 
 export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isInsideTelegram, setIsInsideTelegram] = useState(false);
+  const [themeMode, setThemeModeState] = useState<'dark' | 'light' | 'system'>(() => {
+    const stored = localStorage.getItem('vault_theme_mode');
+    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+    const legacy = localStorage.getItem('vault_theme');
+    return legacy === 'light' ? 'light' : 'dark';
+  });
   const [colorScheme, setColorScheme] = useState<'light' | 'dark'>('dark');
   const [themeParams, setThemeParams] = useState<TelegramThemeParams>({});
   const [user, setUser] = useState<TelegramWebAppUser>(DEFAULT_MOCK_USER);
@@ -71,39 +79,79 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [simulatedBackButtonVisible, setSimulatedBackButtonVisible] = useState(false);
   const [backButtonClickHandlers, setBackButtonClickHandlers] = useState<Array<() => void>>([]);
 
+  // Determine effective theme ('light' or 'dark') based on themeMode
+  const resolveEffectiveScheme = (mode: 'dark' | 'light' | 'system'): 'light' | 'dark' => {
+    if (mode === 'dark') return 'dark';
+    if (mode === 'light') return 'light';
+    const tg = window.Telegram?.WebApp;
+    if (tg?.colorScheme) return tg.colorScheme;
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'dark';
+  };
+
+  const syncTelegramNativeHeader = (isDark: boolean) => {
+    const tg = window.Telegram?.WebApp;
+    const colorHex = isDark ? '#080A0F' : '#F4F6F9';
+    try {
+      if (tg?.setHeaderColor) {
+        tg.setHeaderColor(colorHex);
+      }
+      if (tg?.setBackgroundColor) {
+        tg.setBackgroundColor(colorHex);
+      }
+    } catch (e) {
+      // Ignored if older version
+    }
+  };
+
+  const applyThemeParamsToCSSVars = (params?: TelegramThemeParams) => {
+    if (!params || typeof document === 'undefined') return;
+    const root = document.documentElement;
+    if (params.bg_color) root.style.setProperty('--tg-theme-bg-color', params.bg_color);
+    if (params.secondary_bg_color) root.style.setProperty('--tg-theme-secondary-bg-color', params.secondary_bg_color);
+    if (params.text_color) root.style.setProperty('--tg-theme-text-color', params.text_color);
+    if (params.hint_color) root.style.setProperty('--tg-theme-hint-color', params.hint_color);
+    if (params.link_color) root.style.setProperty('--tg-theme-link-color', params.link_color);
+    if (params.button_color) root.style.setProperty('--tg-theme-button-color', params.button_color);
+    if (params.button_text_color) root.style.setProperty('--tg-theme-button-text-color', params.button_text_color);
+  };
+
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
 
-    if (tg && tg.initData !== undefined) {
-      // Detected real Telegram WebApp environment
-      setIsInsideTelegram(true);
-
-      // Expand to full viewport
+    if (tg) {
+      // Trigger Telegram WebApp ready and expand lifecycle hooks
       try {
-        tg.expand();
         tg.ready();
+        tg.expand();
       } catch (e) {
-        console.warn('Telegram expand error:', e);
+        console.warn('Telegram expand/ready error:', e);
       }
 
-      // Initialize theme and user
-      if (tg.colorScheme) {
-        setColorScheme(tg.colorScheme);
-      }
+      // Detect if app is running inside Telegram
+      const hasInitData = Boolean(tg.initData && tg.initData.length > 0);
+      const isTgClient = Boolean(tg.platform && tg.platform !== 'unknown');
+      setIsInsideTelegram(hasInitData || isTgClient);
+
       if (tg.themeParams) {
         setThemeParams(tg.themeParams);
+        applyThemeParamsToCSSVars(tg.themeParams);
       }
       if (tg.initDataUnsafe?.user) {
         setUser(tg.initDataUnsafe.user);
       }
 
-      // Listen to theme change events from Telegram client
       const handleThemeChange = () => {
-        if (tg.colorScheme) {
-          setColorScheme(tg.colorScheme);
-        }
         if (tg.themeParams) {
           setThemeParams(tg.themeParams);
+          applyThemeParamsToCSSVars(tg.themeParams);
+        }
+        if (themeMode === 'system') {
+          const effective = resolveEffectiveScheme('system');
+          setColorScheme(effective);
+          syncTelegramNativeHeader(effective === 'dark');
         }
       };
 
@@ -111,25 +159,31 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return () => {
         tg.offEvent('themeChanged', handleThemeChange);
       };
-    } else {
-      // Running in standard web browser
-      // Default to dark for Vault fintech aesthetic
-      const stored = localStorage.getItem('vault_theme');
-      setColorScheme(stored === 'light' ? 'light' : 'dark');
     }
-  }, []);
+  }, [themeMode]);
 
-  // Sync dark class on document element
+  // Update colorScheme whenever themeMode changes
   useEffect(() => {
-    if (colorScheme === 'dark') {
+    const effective = resolveEffectiveScheme(themeMode);
+    setColorScheme(effective);
+
+    if (effective === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [colorScheme]);
+
+    syncTelegramNativeHeader(effective === 'dark');
+  }, [themeMode]);
+
+  const setThemeMode = (mode: 'dark' | 'light' | 'system') => {
+    localStorage.setItem('vault_theme_mode', mode);
+    setThemeModeState(mode);
+  };
 
   const toggleTheme = () => {
-    setColorScheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    const next = colorScheme === 'dark' ? 'light' : 'dark';
+    setThemeMode(next);
   };
 
   const closeApp = () => {
@@ -288,6 +342,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         haptic,
         mainButton,
         backButton,
+        themeMode,
+        setThemeMode,
         toggleTheme,
         closeApp,
       }}

@@ -14,29 +14,34 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   children,
   ...props
 }) => {
-  let variantStyles = 'bg-slate-900/65 border-white/[0.08] shadow-glass';
+  let variantStyles =
+    'bg-white/85 dark:bg-zinc-900/60 border-slate-200/80 dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] text-slate-900 dark:text-white';
 
   if (variant === 'elevated') {
-    variantStyles = 'bg-slate-800/70 border-white/[0.12] shadow-2xl';
+    variantStyles =
+      'bg-white/95 dark:bg-zinc-800/75 border-slate-200 dark:border-white/[0.12] shadow-lg dark:shadow-2xl text-slate-900 dark:text-white';
   } else if (variant === 'income') {
-    variantStyles = 'bg-emerald-950/35 border-emerald-500/25 shadow-income-glow';
+    variantStyles =
+      'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-500/25 shadow-sm dark:shadow-income-glow text-slate-900 dark:text-white';
   } else if (variant === 'expense') {
-    variantStyles = 'bg-rose-950/35 border-rose-500/25 shadow-expense-glow';
+    variantStyles =
+      'bg-rose-50/80 dark:bg-rose-950/30 border-rose-200/80 dark:border-rose-500/25 shadow-sm dark:shadow-expense-glow text-slate-900 dark:text-white';
   } else if (variant === 'accent') {
-    variantStyles = 'bg-indigo-950/40 border-indigo-500/30 shadow-glass-glow';
+    variantStyles =
+      'bg-indigo-50/80 dark:bg-indigo-950/35 border-indigo-200/80 dark:border-indigo-500/30 shadow-sm dark:shadow-glass-glow text-slate-900 dark:text-white';
   }
 
   const interactiveStyles = interactive
-    ? 'cursor-pointer active:scale-[0.985] transition-all duration-200 hover:border-white/[0.18]'
+    ? 'cursor-pointer active:scale-[0.985] transition-all duration-200 hover:border-slate-300 dark:hover:border-white/[0.18]'
     : '';
 
   return (
     <div
-      className={`relative backdrop-blur-xl border rounded-2.5xl p-4 overflow-hidden ${variantStyles} ${interactiveStyles} ${className}`}
+      className={`relative backdrop-blur-xl border rounded-3xl p-4 overflow-hidden transition-colors duration-200 ease-out ${variantStyles} ${interactiveStyles} ${className}`}
       {...props}
     >
       {/* Top subtle rim highlight */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-slate-300/40 dark:via-white/15 to-transparent pointer-events-none" />
       {children}
     </div>
   );

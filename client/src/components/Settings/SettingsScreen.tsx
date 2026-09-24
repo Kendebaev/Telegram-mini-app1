@@ -9,6 +9,9 @@ import {
   Check,
   AlertTriangle,
   FolderTree,
+  Hash,
+  Plus,
+  X,
 } from 'lucide-react';
 import { useSettingsStore, SUPPORTED_CURRENCIES } from '../../stores/settingsStore';
 import { useTransactionStore } from '../../stores/transactionStore';
@@ -27,7 +30,12 @@ export const SettingsScreen: React.FC = () => {
     wipeData,
     formatAmount,
   } = useSettingsStore();
-  const { transactions } = useTransactionStore();
+  const {
+    transactions,
+    hashtagSuggestions,
+    addHashtagSuggestion,
+    removeHashtagSuggestion,
+  } = useTransactionStore();
   const { categories } = useCategoryStore();
   const { openManageCategories } = useUIStore();
   const { user, isInsideTelegram, haptic } = useTelegram();
@@ -35,6 +43,21 @@ export const SettingsScreen: React.FC = () => {
   const [isEditingBalance, setIsEditingBalance] = useState(false);
   const [balanceInput, setBalanceInput] = useState(startingBalance.toString());
   const [isConfirmingWipe, setIsConfirmingWipe] = useState(false);
+  const [newHashtagInput, setNewHashtagInput] = useState('');
+
+  const handleAddHashtag = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const clean = newHashtagInput.trim().replace(/^#/, '');
+    if (!clean) return;
+    haptic.notification('success');
+    await addHashtagSuggestion(clean);
+    setNewHashtagInput('');
+  };
+
+  const handleRemoveHashtag = async (tag: string) => {
+    haptic.impact('light');
+    await removeHashtagSuggestion(tag);
+  };
 
   const handleSaveBalance = async () => {
     const parsed = parseFloat(balanceInput);
@@ -192,7 +215,66 @@ export const SettingsScreen: React.FC = () => {
         <span className="text-xs font-semibold text-indigo-400">Configure</span>
       </GlassCard>
 
-      {/* 4. Currency Selector */}
+      {/* 4. Suggested Hashtags */}
+      <GlassCard className="p-4 rounded-3xl space-y-3">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-xl bg-violet-500/15 text-violet-400 flex items-center justify-center border border-violet-500/25">
+            <Hash size={16} />
+          </div>
+          <div>
+            <span className="text-xs font-bold text-white block">Suggested Hashtags</span>
+            <span className="text-[11px] text-slate-400">Quick-tag suggestions for logging transactions</span>
+          </div>
+        </div>
+
+        {/* Add Hashtag Form */}
+        <form onSubmit={handleAddHashtag} className="flex gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">#</span>
+            <input
+              type="text"
+              value={newHashtagInput}
+              onChange={(e) => setNewHashtagInput(e.target.value)}
+              placeholder="new-tag (e.g. coffee, rent)"
+              className="w-full pl-7 pr-3 py-2 rounded-xl glass-input text-xs text-white placeholder:text-slate-500 focus:outline-none"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!newHashtagInput.trim()}
+            className="py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-1 active:scale-95 transition-all shadow-xs"
+          >
+            <Plus size={13} />
+            <span>Add</span>
+          </button>
+        </form>
+
+        {/* Hashtag Badges */}
+        <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto no-scrollbar pt-1">
+          {hashtagSuggestions.length === 0 ? (
+            <span className="text-[11px] text-slate-500 italic py-1">No hashtags registered yet</span>
+          ) : (
+            hashtagSuggestions.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/[0.06] border border-white/[0.08] text-[11px] font-semibold text-zinc-300 group transition-all"
+              >
+                <span>#{tag}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveHashtag(tag)}
+                  aria-label={`Remove #${tag}`}
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 active:scale-90 transition-colors ml-0.5"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))
+          )}
+        </div>
+      </GlassCard>
+
+      {/* 5. Currency Selector */}
       <GlassCard className="p-4 rounded-3xl space-y-3">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center border border-amber-500/25">

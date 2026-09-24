@@ -95,6 +95,8 @@ export interface TelegramWebApp {
   showPopup(params: { title?: string; message: string; buttons?: Array<{ id?: string; type?: string; text?: string }> }, callback?: (buttonId: string) => void): void;
   showAlert(message: string, callback?: () => void): void;
   showConfirm(message: string, callback?: (confirmed: boolean) => void): void;
+  setHeaderColor?(color: string): void;
+  setBackgroundColor?(color: string): void;
   ready(): void;
   expand(): void;
   close(): void;

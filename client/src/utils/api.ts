@@ -1,4 +1,8 @@
-const API_BASE = '/api';
+// Dynamic API Base URL supporting custom VITE_API_URL or defaulting to relative /api
+const envApiUrl = import.meta.env.VITE_API_URL;
+const API_BASE = (envApiUrl && envApiUrl.trim() !== '')
+  ? envApiUrl.trim().replace(/\/$/, '')
+  : '/api';
 
 export function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
@@ -17,7 +21,8 @@ export async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${cleanEndpoint}`;
 
   const response = await fetch(url, {
     ...options,

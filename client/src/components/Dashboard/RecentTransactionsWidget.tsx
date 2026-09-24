@@ -44,7 +44,7 @@ export const RecentTransactionsWidget: React.FC = () => {
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between px-1">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
           Recent Activity
         </h3>
         <button
@@ -53,7 +53,7 @@ export const RecentTransactionsWidget: React.FC = () => {
             haptic.selection();
             setActiveTab('history');
           }}
-          className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 active:scale-95 transition-all"
+          className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 active:scale-95 transition-all"
         >
           <span>View All</span>
           <ArrowRight size={13} />
@@ -61,12 +61,12 @@ export const RecentTransactionsWidget: React.FC = () => {
       </div>
 
       {recentList.length === 0 ? (
-        <GlassCard className="p-6 text-center text-slate-400">
-          <p className="text-sm">No transactions yet.</p>
-          <p className="text-xs text-slate-500 mt-1">Tap the '+' button below to record your first entry.</p>
+        <GlassCard className="p-6 text-center text-slate-400 dark:text-zinc-500">
+          <p className="text-sm font-medium text-slate-600 dark:text-zinc-300">No transactions yet.</p>
+          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">Tap the '+' button below to record your first entry.</p>
         </GlassCard>
       ) : (
-        <div className="space-y-2">
+        <div className="rounded-3xl overflow-hidden bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] divide-y divide-slate-100 dark:divide-white/[0.05] transition-colors duration-200">
           {recentList.map((tx) => {
             const cat = tx.category || getCategoryById(tx.category_id);
             const isIncome = tx.type === 'income';
@@ -78,39 +78,47 @@ export const RecentTransactionsWidget: React.FC = () => {
                   haptic.selection();
                   setSelectedTransaction(tx);
                 }}
-                className="glass-card p-3 rounded-2.5xl flex items-center justify-between cursor-pointer active:scale-[0.985] transition-all hover:border-white/20"
+                className="p-3.5 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/[0.04] transition-colors duration-150"
               >
                 {/* Left: Icon & Info */}
                 <div className="flex items-center space-x-3 min-w-0">
                   <div
-                    className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                    className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xs"
                     style={{
-                      backgroundColor: `${cat?.color || '#818CF8'}25`,
+                      backgroundColor: `${cat?.color || '#818CF8'}18`,
                       color: cat?.color || '#818CF8',
                     }}
                   >
-                    <CategoryIcon name={cat?.icon || 'HelpCircle'} size={19} color={cat?.color} />
+                    <CategoryIcon name={cat?.icon || 'HelpCircle'} size={18} color={cat?.color} />
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-bold text-white truncate">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
                         {cat?.name || (isIncome ? 'Other Income' : 'Other Expense')}
                       </span>
-                      {/* Payment Method badge */}
-                      <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
-                        {tx.payment_method === 'Cash' ? <Banknote size={10} /> : <CreditCard size={10} />}
-                        {tx.payment_method}
+                      {/* Payment Method micro-icon */}
+                      <span className="text-slate-400 dark:text-zinc-500" title={tx.payment_method}>
+                        {tx.payment_method === 'Cash' ? (
+                          <Banknote size={12} className="stroke-[2.2]" />
+                        ) : (
+                          <CreditCard size={12} className="stroke-[2.2]" />
+                        )}
                       </span>
                     </div>
 
-                    <div className="text-[11px] text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                    <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate flex items-center gap-1.5 mt-0.5">
                       <span>{formatTransactionDate(tx.date)}</span>
                       {tx.note && (
                         <>
                           <span>•</span>
-                          <span className="text-slate-300 truncate">{tx.note}</span>
+                          <span className="text-slate-600 dark:text-zinc-300 truncate">{tx.note}</span>
                         </>
+                      )}
+                      {tx.hashtags && tx.hashtags.length > 0 && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 font-medium">
+                          #{tx.hashtags[0]}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -120,7 +128,7 @@ export const RecentTransactionsWidget: React.FC = () => {
                 <div className="text-right flex-shrink-0 pl-3">
                   <span
                     className={`text-sm font-extrabold tabular-nums tracking-tight ${
-                      isIncome ? 'text-emerald-400' : 'text-rose-400'
+                      isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                     }`}
                   >
                     {isIncome ? '+' : '-'}
@@ -135,3 +143,5 @@ export const RecentTransactionsWidget: React.FC = () => {
     </div>
   );
 };
+
+export const RecentActivity = RecentTransactionsWidget;

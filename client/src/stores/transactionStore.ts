@@ -138,6 +138,8 @@ interface TransactionState {
   updateTransaction: (id: string, updates: Partial<Transaction>) => Promise<Transaction>;
   deleteTransaction: (id: string) => Promise<void>;
   fetchHashtagSuggestions: (query?: string) => Promise<void>;
+  addHashtagSuggestion: (tag: string) => Promise<void>;
+  removeHashtagSuggestion: (tag: string) => Promise<void>;
 
   // Selectors / Computations
   getAllTransactions: () => Transaction[];
@@ -273,6 +275,45 @@ export const useTransactionStore = create<TransactionState>((set, get) => {
         }
       } catch {
         // use local
+      }
+    },
+
+    addHashtagSuggestion: async (tag: string) => {
+      const clean = tag.trim().replace(/^#/, '').toLowerCase();
+      if (!clean) return;
+
+      const current = get().hashtagSuggestions;
+      if (!current.includes(clean)) {
+        const next = [clean, ...current];
+        localStorage.setItem(LOCAL_STORAGE_HASHTAGS, JSON.stringify(next));
+        set({ hashtagSuggestions: next });
+      }
+
+      try {
+        await apiRequest('/hashtags', {
+          method: 'POST',
+          body: JSON.stringify({ tag: clean }),
+        });
+      } catch (err) {
+        console.warn('Backend add hashtag failed (saved locally):', err);
+      }
+    },
+
+    removeHashtagSuggestion: async (tag: string) => {
+      const clean = tag.trim().replace(/^#/, '').toLowerCase();
+      if (!clean) return;
+
+      const current = get().hashtagSuggestions;
+      const next = current.filter((t) => t.toLowerCase() !== clean);
+      localStorage.setItem(LOCAL_STORAGE_HASHTAGS, JSON.stringify(next));
+      set({ hashtagSuggestions: next });
+
+      try {
+        await apiRequest(`/hashtags/${encodeURIComponent(clean)}`, {
+          method: 'DELETE',
+        });
+      } catch (err) {
+        console.warn('Backend delete hashtag failed (removed locally):', err);
       }
     },
 

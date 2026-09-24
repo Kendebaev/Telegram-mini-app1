@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
 import { TelegramProvider } from './context/TelegramContext';
 import { Header } from './components/Navigation/Header';
-import { TabBar } from './components/Navigation/TabBar';
+import { BottomNav } from './components/Navigation/BottomNav';
 import { MockTelegramDevBar } from './components/Navigation/MockTelegramDevBar';
 import { BackgroundMesh } from './components/glass/BackgroundMesh';
 import { DashboardView } from './components/Dashboard/DashboardView';
 import { HistoryView } from './components/History/HistoryView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { SettingsScreen } from './components/Settings/SettingsScreen';
+import { SettingsModal } from './components/Settings/SettingsModal';
 import { AddTransactionScreen } from './components/ExpenseLogging/AddTransactionScreen';
 import { TransactionDetailSheet } from './components/History/TransactionDetailSheet';
 import { CategoryManagementScreen } from './components/ExpenseLogging/CategoryManagementScreen';
@@ -21,7 +22,9 @@ const MainLayout: React.FC = () => {
     activeTab,
     isAddTransactionOpen,
     isManageCategoriesOpen,
+    isSettingsOpen,
     closeManageCategories,
+    closeSettings,
   } = useUIStore();
 
   const { fetchProfile } = useSettingsStore();
@@ -37,7 +40,7 @@ const MainLayout: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen min-h-[100dvh] bg-[#070A12] text-slate-100 flex flex-col font-sans transition-colors duration-200 overflow-x-hidden selection:bg-indigo-500/30">
+    <div className="relative min-h-screen min-h-[100dvh] bg-[#F4F6F9] dark:bg-[#080A0F] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200 overflow-x-hidden selection:bg-indigo-500/30">
       {/* Glowing ambient background mesh */}
       <BackgroundMesh />
 
@@ -55,8 +58,11 @@ const MainLayout: React.FC = () => {
         {activeTab === 'settings' && <SettingsScreen />}
       </main>
 
-      {/* Floating Bottom Glass Navigation Dock */}
-      <TabBar />
+      {/* Floating Bottom Glass Navigation Dock (strictly 4 elements) */}
+      <BottomNav />
+
+      {/* Glassmorphic Settings Modal / Bottom Sheet */}
+      <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
 
       {/* Full-screen Add / Edit Transaction Sheet */}
       {isAddTransactionOpen && <AddTransactionScreen />}
