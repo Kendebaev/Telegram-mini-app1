@@ -16,6 +16,8 @@
     "db:studio": "prisma studio --schema=server/prisma/schema.prisma"
   },
   "dependencies": {
+    "@neon/config": "^1.7.3",
+    "@neon/env": "^1.4.4",
     "@prisma/client": "^6.19.3",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
