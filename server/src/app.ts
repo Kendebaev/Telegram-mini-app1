@@ -8,6 +8,7 @@ import analyticsRouter from './routes/analytics.js';
 import hashtagsRouter from './routes/hashtags.js';
 import { telegramAuthMiddleware, AuthenticatedRequest } from './auth.js';
 import { prisma } from './db.js';
+import { processTelegramUpdate } from './botHandler.js';
 
 dotenv.config();
 
@@ -22,6 +23,25 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Telegram Bot Webhook endpoint (receives updates from Telegram servers)
+app.post(['/api/bot', '/bot'], async (req, res) => {
+  try {
+    const update = req.body;
+    if (update && (update.message || update.callback_query)) {
+      await processTelegramUpdate(update);
+    }
+    res.status(200).json({ ok: true });
+  } catch (err: any) {
+    console.error('Error handling Telegram webhook:', err);
+    // Always reply 200 so Telegram does not retry indefinitely
+    res.status(200).json({ ok: false, error: err.message });
+  }
+});
+
+app.get(['/api/bot', '/bot'], (_req, res) => {
+  res.json({ status: 'ok', bot: 'active', timestamp: new Date().toISOString() });
+});
 
 // API router containing all endpoints
 const apiRouter = express.Router();

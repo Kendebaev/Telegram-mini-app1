@@ -19,6 +19,7 @@ model User {
   transactions      Transaction[]
   custom_categories Category[]
   hashtag_usages    HashtagUsage[]
+  bot_draft         BotDraft?
 
   @@map("users")
 }
@@ -74,4 +75,17 @@ model HashtagUsage {
   @@unique([user_id, tag])
   @@index([user_id, last_used_at(sort: Desc)])
   @@map("hashtag_usages")
+}
+
+model BotDraft {
+  user_id     BigInt   @id
+  amount      Float
+  type        String?  // "expense" | "income"
+  category_id String?
+  note        String?
+  updated_at  DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [user_id], references: [telegram_id], onDelete: Cascade)
+
+  @@map("bot_drafts")
 }
