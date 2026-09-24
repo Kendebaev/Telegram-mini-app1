@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { X, Edit3, Trash2, Calendar, CreditCard, Banknote, Tag } from 'lucide-react';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useCategoryStore } from '../../stores/categoryStore';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useSettingsStore, useTranslation } from '../../stores/settingsStore';
+import { getLocalizedCategoryName } from '../../utils/translations';
 import { useUIStore } from '../../stores/uiStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { CategoryIcon } from '../glass/CategoryIcon';
@@ -13,6 +14,7 @@ export const TransactionDetailSheet: React.FC = () => {
   const { deleteTransaction } = useTransactionStore();
   const { getCategoryById } = useCategoryStore();
   const { formatAmount } = useSettingsStore();
+  const { t, language } = useTranslation();
   const { haptic, backButton } = useTelegram();
 
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
@@ -53,13 +55,13 @@ export const TransactionDetailSheet: React.FC = () => {
     setSelectedTransaction(null);
   };
 
-  const formattedDate = new Date(tx.date).toLocaleDateString('en-US', {
+  const formattedDate = new Date(tx.date).toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   });
-  const formattedTime = new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formattedTime = new Date(tx.date).toLocaleTimeString(language === 'ru' ? 'ru-RU' : 'en-US', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
@@ -67,7 +69,7 @@ export const TransactionDetailSheet: React.FC = () => {
         {/* Header */}
         <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Transaction Details
+            {t('transaction_details')}
           </span>
           <button
             type="button"
@@ -88,7 +90,7 @@ export const TransactionDetailSheet: React.FC = () => {
           >
             <div className="inline-block mb-1">
               <GlassBadge variant={isIncome ? 'income' : 'expense'}>
-                {isIncome ? 'Income' : 'Expense'}
+                {isIncome ? t('income') : t('expense')}
               </GlassBadge>
             </div>
             <div
@@ -105,7 +107,7 @@ export const TransactionDetailSheet: React.FC = () => {
           <div className="glass-card rounded-2.5xl p-4 space-y-3.5 border border-white/[0.08]">
             {/* Category */}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-medium">Category</span>
+              <span className="text-xs text-slate-400 font-medium">{t('categories')}</span>
               <div className="flex items-center space-x-2">
                 <div
                   className="w-6 h-6 rounded-lg flex items-center justify-center"
@@ -116,7 +118,9 @@ export const TransactionDetailSheet: React.FC = () => {
                 >
                   <CategoryIcon name={cat?.icon || 'HelpCircle'} size={14} color={cat?.color} />
                 </div>
-                <span className="text-xs font-bold text-white">{cat?.name || 'Other'}</span>
+                <span className="text-xs font-bold text-white">
+                  {getLocalizedCategoryName(cat?.name || 'Other', language)}
+                </span>
               </div>
             </div>
 
@@ -124,10 +128,10 @@ export const TransactionDetailSheet: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
                 <Calendar size={13} />
-                Date & Time
+                {t('date_time')}
               </span>
               <span className="text-xs font-semibold text-slate-200">
-                {formattedDate} at {formattedTime}
+                {formattedDate} {language === 'ru' ? 'в' : 'at'} {formattedTime}
               </span>
             </div>
 
@@ -135,15 +139,17 @@ export const TransactionDetailSheet: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
                 {tx.payment_method === 'Cash' ? <Banknote size={13} /> : <CreditCard size={13} />}
-                Payment Method
+                {t('payment_method')}
               </span>
-              <span className="text-xs font-semibold text-slate-200">{tx.payment_method}</span>
+              <span className="text-xs font-semibold text-slate-200">
+                {tx.payment_method === 'Cash' ? t('cash') : t('card')}
+              </span>
             </div>
 
             {/* Note */}
             {tx.note && (
               <div className="pt-2 border-t border-white/[0.06]">
-                <span className="text-xs text-slate-400 font-medium block mb-1">Note</span>
+                <span className="text-xs text-slate-400 font-medium block mb-1">{t('note_label')}</span>
                 <p className="text-xs text-slate-200 bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
                   {tx.note}
                 </p>
@@ -155,7 +161,7 @@ export const TransactionDetailSheet: React.FC = () => {
               <div className="pt-2 border-t border-white/[0.06]">
                 <span className="text-xs text-slate-400 font-medium block mb-1.5 flex items-center gap-1">
                   <Tag size={12} className="text-indigo-400" />
-                  Hashtags
+                  {t('tags')}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {tx.hashtags.map((tag) => (
@@ -180,7 +186,7 @@ export const TransactionDetailSheet: React.FC = () => {
               } active:scale-95`}
             >
               <Trash2 size={15} />
-              <span>{isConfirmingDelete ? 'Confirm Delete?' : 'Delete'}</span>
+              <span>{isConfirmingDelete ? t('confirm_delete_q') : t('delete')}</span>
             </button>
 
             <button
@@ -189,7 +195,7 @@ export const TransactionDetailSheet: React.FC = () => {
               className="flex-1 py-3 px-4 rounded-2xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/40 active:scale-95 transition-all flex items-center justify-center space-x-1.5"
             >
               <Edit3 size={15} />
-              <span>Edit</span>
+              <span>{t('edit')}</span>
             </button>
           </div>
         </div>

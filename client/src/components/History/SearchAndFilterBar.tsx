@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Search, X, Lock, Calendar } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useCategoryStore } from '../../stores/categoryStore';
+import { useTranslation } from '../../stores/settingsStore';
+import { getLocalizedCategoryName } from '../../utils/translations';
 import { useTelegram } from '../../context/TelegramContext';
 import type { FilterState } from '../../types/models';
 
@@ -16,6 +18,7 @@ export const SearchAndFilterBar: React.FC = () => {
     setFilterDateRange,
   } = useUIStore();
   const { getCategoriesByType } = useCategoryStore();
+  const { t, language } = useTranslation();
   const { haptic } = useTelegram();
 
   const [isCustomDateOpen, setIsCustomDateOpen] = useState(false);
@@ -29,10 +32,10 @@ export const SearchAndFilterBar: React.FC = () => {
       : [];
 
   const periods: Array<{ id: FilterState['period']; label: string }> = [
-    { id: 'today', label: 'Day' },
-    { id: 'week', label: 'Week' },
-    { id: 'month', label: 'Month' },
-    { id: 'all', label: 'All Time' },
+    { id: 'today', label: t('day') },
+    { id: 'week', label: t('week') },
+    { id: 'month', label: t('month') },
+    { id: 'all', label: t('all_time') },
   ];
 
   const isCustomActive = Boolean(filters.startDate || filters.endDate);
@@ -46,7 +49,7 @@ export const SearchAndFilterBar: React.FC = () => {
           type="text"
           value={filters.search}
           onChange={(e) => setFilterSearch(e.target.value)}
-          placeholder="Search note, #hashtag, or category..."
+          placeholder={t('search_input_placeholder')}
           className="w-full pl-9 pr-8 py-2.5 rounded-2xl bg-white/70 dark:bg-zinc-900/40 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-500/80 transition-colors"
         />
         {filters.search && (
@@ -77,7 +80,7 @@ export const SearchAndFilterBar: React.FC = () => {
               : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          All
+          {t('all')}
         </button>
         <button
           type="button"
@@ -91,7 +94,7 @@ export const SearchAndFilterBar: React.FC = () => {
               : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          Expenses
+          {t('expenses')}
         </button>
         <button
           type="button"
@@ -105,7 +108,7 @@ export const SearchAndFilterBar: React.FC = () => {
               : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          Income
+          {t('income')}
         </button>
       </div>
 
@@ -114,7 +117,7 @@ export const SearchAndFilterBar: React.FC = () => {
         {isCategoryDisabled ? (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100/80 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/[0.06] text-[11px] text-slate-500 dark:text-zinc-400">
             <Lock size={12} className="text-slate-400 dark:text-zinc-500" />
-            <span>Select <strong>Expenses</strong> or <strong>Income</strong> above to filter by category</span>
+            <span>{t('category_filter_notice')}</span>
           </div>
         ) : (
           <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-0.5">
@@ -130,7 +133,7 @@ export const SearchAndFilterBar: React.FC = () => {
                   : 'bg-white/80 dark:bg-white/[0.06] text-slate-600 dark:text-zinc-400 border border-slate-200/80 dark:border-white/[0.08] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              All Categories
+              {t('all_categories')}
             </button>
 
             {availableCategories.map((cat) => {
@@ -153,7 +156,7 @@ export const SearchAndFilterBar: React.FC = () => {
                     className="w-2 h-2 rounded-full inline-block"
                     style={{ backgroundColor: cat.color }}
                   />
-                  <span>{cat.name}</span>
+                  <span>{getLocalizedCategoryName(cat.name, language)}</span>
                 </button>
               );
             })}
@@ -202,7 +205,7 @@ export const SearchAndFilterBar: React.FC = () => {
               }`}
             >
               <Calendar size={11} />
-              <span>{isCustomActive ? 'Custom Range' : 'Custom'}</span>
+              <span>{isCustomActive ? t('custom_range') : t('custom')}</span>
             </button>
           </div>
 
@@ -222,7 +225,7 @@ export const SearchAndFilterBar: React.FC = () => {
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
-                {method === 'all' ? 'All' : method}
+                {method === 'all' ? t('all') : method === 'Card' ? t('card') : t('cash')}
               </button>
             ))}
           </div>
@@ -234,7 +237,7 @@ export const SearchAndFilterBar: React.FC = () => {
             <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
               <span className="flex items-center gap-1">
                 <Calendar size={13} className="text-indigo-500" />
-                Filter by Custom Date Range
+                {t('filter_by_custom_range')}
               </span>
               {isCustomActive && (
                 <button
@@ -247,14 +250,14 @@ export const SearchAndFilterBar: React.FC = () => {
                   className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-0.5"
                 >
                   <X size={11} />
-                  Reset Range
+                  {t('reset_range')}
                 </button>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] text-slate-400 dark:text-zinc-500 block mb-0.5">Start Date</label>
+                <label className="text-[10px] text-slate-400 dark:text-zinc-500 block mb-0.5">{t('start_date')}</label>
                 <input
                   type="date"
                   value={filters.startDate || ''}
@@ -263,7 +266,7 @@ export const SearchAndFilterBar: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 dark:text-zinc-500 block mb-0.5">End Date</label>
+                <label className="text-[10px] text-slate-400 dark:text-zinc-500 block mb-0.5">{t('end_date')}</label>
                 <input
                   type="date"
                   value={filters.endDate || ''}

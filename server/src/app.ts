@@ -71,10 +71,37 @@ apiRouter.get('/user/profile', async (req: AuthenticatedRequest, res) => {
       ...req.telegramUser,
       currency: user?.currency || 'USD',
       starting_balance: user?.starting_balance ?? 0.0,
+      language: user?.language || 'en',
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
     res.status(500).json({ error: 'Failed to fetch user profile' });
+  }
+});
+
+// Update User Language Preference
+apiRouter.put('/user/language', async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.telegramUser?.id;
+    const { language } = req.body;
+
+    if (!userId || !language || !['en', 'ru'].includes(language)) {
+      res.status(400).json({ error: 'Valid language ("en" or "ru") is required' });
+      return;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { telegram_id: BigInt(userId) },
+      data: { language },
+    });
+
+    res.json({
+      ...updatedUser,
+      telegram_id: updatedUser.telegram_id.toString(),
+    });
+  } catch (error) {
+    console.error('Error updating language:', error);
+    res.status(500).json({ error: 'Failed to update language' });
   }
 });
 

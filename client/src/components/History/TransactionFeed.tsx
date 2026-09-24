@@ -2,14 +2,15 @@ import React from 'react';
 import { SearchX, CreditCard, Banknote } from 'lucide-react';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useCategoryStore } from '../../stores/categoryStore';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useSettingsStore, useTranslation } from '../../stores/settingsStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { CategoryIcon } from '../glass/CategoryIcon';
 import { GlassCard } from '../glass/GlassCard';
+import { getLocalizedCategoryName, type Language } from '../../utils/translations';
 import type { Transaction } from '../../types/models';
 
-function formatDateGroup(dateStr: string): string {
+function formatDateGroup(dateStr: string, lang: Language): string {
   const date = new Date(dateStr);
   const now = new Date();
 
@@ -25,25 +26,26 @@ function formatDateGroup(dateStr: string): string {
     date.getMonth() === yesterday.getMonth() &&
     date.getFullYear() === yesterday.getFullYear();
 
-  if (isToday) return 'TODAY';
-  if (isYesterday) return 'YESTERDAY';
+  if (isToday) return lang === 'ru' ? 'СЕГОДНЯ' : 'TODAY';
+  if (isYesterday) return lang === 'ru' ? 'ВЧЕРА' : 'YESTERDAY';
 
   return date
-    .toLocaleDateString('en-US', {
+    .toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', {
       month: 'short',
       day: 'numeric',
     })
     .toUpperCase();
 }
 
-function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+function formatTime(dateStr: string, lang: Language): string {
+  return new Date(dateStr).toLocaleTimeString(lang === 'ru' ? 'ru-RU' : 'en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
 export const TransactionFeed: React.FC = () => {
   const { getFilteredTransactions } = useTransactionStore();
   const { getCategoryById } = useCategoryStore();
   const { formatAmount } = useSettingsStore();
+  const { t, language } = useTranslation();
   const { filters, setSelectedTransaction, resetFilters } = useUIStore();
   const { haptic } = useTelegram();
 
@@ -56,9 +58,9 @@ export const TransactionFeed: React.FC = () => {
           <SearchX size={24} />
         </div>
         <div>
-          <h4 className="font-bold text-sm text-slate-900 dark:text-white">No Transactions Found</h4>
+          <h4 className="font-bold text-sm text-slate-900 dark:text-white">{t('no_tx_found')}</h4>
           <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xs mx-auto">
-            Try adjusting your search terms, date range, or category filters.
+            {t('no_tx_found_sub')}
           </p>
         </div>
         <button
@@ -69,7 +71,7 @@ export const TransactionFeed: React.FC = () => {
           }}
           className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.12] text-xs font-semibold text-slate-800 dark:text-white active:scale-95 transition-all"
         >
-          Reset All Filters
+          {t('reset_all_filters')}
         </button>
       </GlassCard>
     );
@@ -78,7 +80,7 @@ export const TransactionFeed: React.FC = () => {
   // Group by date
   const grouped: Record<string, Transaction[]> = {};
   transactions.forEach((tx) => {
-    const key = formatDateGroup(tx.date);
+    const key = formatDateGroup(tx.date, language);
     if (!grouped[key]) {
       grouped[key] = [];
     }
@@ -105,7 +107,7 @@ export const TransactionFeed: React.FC = () => {
                   dayNet >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-zinc-400'
                 }`}
               >
-                Net: {dayNet >= 0 ? '+' : ''}
+                {t('net_day')}: {dayNet >= 0 ? '+' : ''}
                 {formatAmount(dayNet)}
               </span>
             </div>
@@ -115,6 +117,8 @@ export const TransactionFeed: React.FC = () => {
               {items.map((tx) => {
                 const cat = tx.category || getCategoryById(tx.category_id);
                 const isIncome = tx.type === 'income';
+                const rawCatName = cat?.name || (isIncome ? 'Other Income' : 'Other Expense');
+                const localizedCatName = getLocalizedCategoryName(rawCatName, language);
 
                 return (
                   <div
@@ -144,7 +148,7 @@ export const TransactionFeed: React.FC = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-1.5">
                           <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                            {cat?.name || (isIncome ? 'Other Income' : 'Other Expense')}
+                            {localizedCatName}
                           </span>
                           {/* Payment method micro-icon */}
                           <span className="text-slate-400 dark:text-zinc-500" title={tx.payment_method}>
@@ -158,7 +162,7 @@ export const TransactionFeed: React.FC = () => {
 
                         {/* Timestamp, Note & Hashtags */}
                         <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5 flex items-center gap-1.5">
-                          <span>{formatTime(tx.date)}</span>
+                          <span>{formatTime(tx.date, language)}</span>
                           {tx.note && (
                             <>
                               <span>•</span>

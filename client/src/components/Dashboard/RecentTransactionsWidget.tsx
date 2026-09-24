@@ -2,13 +2,14 @@ import React from 'react';
 import { ArrowRight, CreditCard, Banknote } from 'lucide-react';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useCategoryStore } from '../../stores/categoryStore';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useSettingsStore, useTranslation } from '../../stores/settingsStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { CategoryIcon } from '../glass/CategoryIcon';
 import { GlassCard } from '../glass/GlassCard';
+import { getLocalizedCategoryName, type Language } from '../../utils/translations';
 
-function formatTransactionDate(dateStr: string): string {
+function formatTransactionDate(dateStr: string, lang: Language): string {
   const date = new Date(dateStr);
   const now = new Date();
 
@@ -24,18 +25,19 @@ function formatTransactionDate(dateStr: string): string {
     date.getMonth() === yesterday.getMonth() &&
     date.getFullYear() === yesterday.getFullYear();
 
-  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeStr = date.toLocaleTimeString(lang === 'ru' ? 'ru-RU' : 'en-US', { hour: '2-digit', minute: '2-digit' });
 
-  if (isToday) return `Today, ${timeStr}`;
-  if (isYesterday) return `Yesterday, ${timeStr}`;
+  if (isToday) return lang === 'ru' ? `Сегодня, ${timeStr}` : `Today, ${timeStr}`;
+  if (isYesterday) return lang === 'ru' ? `Вчера, ${timeStr}` : `Yesterday, ${timeStr}`;
 
-  return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
+  return `${date.toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', { month: 'short', day: 'numeric' })}, ${timeStr}`;
 }
 
 export const RecentTransactionsWidget: React.FC = () => {
   const { transactions } = useTransactionStore();
   const { getCategoryById } = useCategoryStore();
   const { formatAmount } = useSettingsStore();
+  const { t, language } = useTranslation();
   const { setActiveTab, setSelectedTransaction } = useUIStore();
   const { haptic } = useTelegram();
 
@@ -45,7 +47,7 @@ export const RecentTransactionsWidget: React.FC = () => {
     <div className="space-y-2.5">
       <div className="flex items-center justify-between px-1">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-          Recent Activity
+          {t('recent_activity')}
         </h3>
         <button
           type="button"
@@ -55,21 +57,23 @@ export const RecentTransactionsWidget: React.FC = () => {
           }}
           className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 active:scale-95 transition-all"
         >
-          <span>View All</span>
+          <span>{t('view_all')}</span>
           <ArrowRight size={13} />
         </button>
       </div>
 
       {recentList.length === 0 ? (
         <GlassCard className="p-6 text-center text-slate-400 dark:text-zinc-500">
-          <p className="text-sm font-medium text-slate-600 dark:text-zinc-300">No transactions yet.</p>
-          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">Tap the '+' button below to record your first entry.</p>
+          <p className="text-sm font-medium text-slate-600 dark:text-zinc-300">{t('no_transactions_yet')}</p>
+          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">{t('tap_to_record')}</p>
         </GlassCard>
       ) : (
         <div className="rounded-3xl overflow-hidden bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] divide-y divide-slate-100 dark:divide-white/[0.05] transition-colors duration-200">
           {recentList.map((tx) => {
             const cat = tx.category || getCategoryById(tx.category_id);
             const isIncome = tx.type === 'income';
+            const rawCatName = cat?.name || (isIncome ? 'Other Income' : 'Other Expense');
+            const localizedCatName = getLocalizedCategoryName(rawCatName, language);
 
             return (
               <div
@@ -95,7 +99,7 @@ export const RecentTransactionsWidget: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-1.5">
                       <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                        {cat?.name || (isIncome ? 'Other Income' : 'Other Expense')}
+                        {localizedCatName}
                       </span>
                       {/* Payment Method micro-icon */}
                       <span className="text-slate-400 dark:text-zinc-500" title={tx.payment_method}>
@@ -108,7 +112,7 @@ export const RecentTransactionsWidget: React.FC = () => {
                     </div>
 
                     <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate flex items-center gap-1.5 mt-0.5">
-                      <span>{formatTransactionDate(tx.date)}</span>
+                      <span>{formatTransactionDate(tx.date, language)}</span>
                       {tx.note && (
                         <>
                           <span>•</span>

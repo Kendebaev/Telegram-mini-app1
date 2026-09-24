@@ -132,6 +132,7 @@ export async function telegramAuthMiddleware(
           last_name: req.telegramUser.last_name || null,
           username: req.telegramUser.username || null,
           currency: 'USD',
+          language: req.telegramUser.language_code?.toLowerCase().startsWith('ru') ? 'ru' : 'en',
         },
       });
     } catch (err) {

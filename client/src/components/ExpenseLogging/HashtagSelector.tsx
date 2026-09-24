@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tag } from 'lucide-react';
 import { useTransactionStore } from '../../stores/transactionStore';
+import { useTranslation } from '../../stores/settingsStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { GlassBadge } from '../glass/GlassBadge';
 
@@ -18,6 +19,7 @@ export const HashtagSelector: React.FC<HashtagSelectorProps> = ({
   onChangeTags,
 }) => {
   const { hashtagSuggestions } = useTransactionStore();
+  const { t } = useTranslation();
   const { haptic } = useTelegram();
 
   const handleToggleTag = (tag: string) => {
@@ -41,7 +43,7 @@ export const HashtagSelector: React.FC<HashtagSelectorProps> = ({
           type="text"
           value={note}
           onChange={(e) => onChangeNote(e.target.value)}
-          placeholder="Note or #hashtag (e.g. Lunch with team #work)"
+          placeholder={t('note_or_hashtag')}
           className="w-full px-3.5 py-2.5 rounded-2xl glass-input text-sm placeholder:text-slate-500"
         />
       </div>
@@ -51,17 +53,17 @@ export const HashtagSelector: React.FC<HashtagSelectorProps> = ({
         <div className="flex flex-wrap gap-1.5 items-center px-1">
           <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
             <Tag size={12} className="text-indigo-400" />
-            Tags:
+            {t('tags')}:
           </span>
-          {tags.map((t) => (
+          {tags.map((tTag) => (
             <GlassBadge
-              key={t}
+              key={tTag}
               variant="brand"
               size="xs"
               clickable
-              onClick={() => handleToggleTag(t)}
+              onClick={() => handleToggleTag(tTag)}
             >
-              #{t} ×
+              #{tTag} ×
             </GlassBadge>
           ))}
         </div>
@@ -71,7 +73,7 @@ export const HashtagSelector: React.FC<HashtagSelectorProps> = ({
       {hashtagSuggestions.length > 0 && (
         <div className="flex flex-wrap gap-1.5 items-center px-1 pt-0.5">
           <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-            Suggested:
+            {t('suggested')}:
           </span>
           {hashtagSuggestions.slice(0, 8).map((suggested) => {
             const isSelected = tags.includes(suggested);

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, Plus, Trash2, ArrowLeft, Check } from 'lucide-react';
 import { useCategoryStore } from '../../stores/categoryStore';
+import { useTranslation } from '../../stores/settingsStore';
+import { getLocalizedCategoryName } from '../../utils/translations';
 import { useTelegram } from '../../context/TelegramContext';
 import { CategoryIcon } from '../glass/CategoryIcon';
 import { GlassButton } from '../glass/GlassButton';
@@ -29,6 +31,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
   defaultType = 'expense',
 }) => {
   const { categories, addCustomCategory, deleteCustomCategory } = useCategoryStore();
+  const { t, language } = useTranslation();
   const { haptic, backButton } = useTelegram();
 
   const [activeTab, setActiveTab] = useState<TransactionType>(defaultType);
@@ -88,8 +91,8 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h2 className="text-base font-bold text-white">Manage Categories</h2>
-            <p className="text-xs text-slate-400">Custom categories & assignments</p>
+            <h2 className="text-base font-bold text-white">{t('manage_categories')}</h2>
+            <p className="text-xs text-slate-400">{t('custom_cats_sub')}</p>
           </div>
         </div>
 
@@ -120,7 +123,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Expense Categories
+            {t('expense_categories')}
           </button>
           <button
             type="button"
@@ -134,7 +137,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Income Categories
+            {t('income_categories')}
           </button>
         </div>
       </div>
@@ -145,7 +148,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
         {isCreating && (
           <GlassCard variant="accent" className="space-y-3">
             <h3 className="text-sm font-bold text-white flex items-center justify-between">
-              <span>New {activeTab === 'expense' ? 'Expense' : 'Income'} Category</span>
+              <span>{activeTab === 'expense' ? t('new_expense_cat') : t('new_income_cat')}</span>
               <button
                 type="button"
                 onClick={() => setIsCreating(false)}
@@ -159,7 +162,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Category Name (e.g. Subscriptions)"
+              placeholder={t('cat_name_placeholder')}
               className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
               autoFocus
             />
@@ -167,7 +170,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
             {/* Icon Picker */}
             <div>
               <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                Select Icon
+                {t('select_icon')}
               </label>
               <div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto p-1 no-scrollbar">
                 {AVAILABLE_ICONS.map((iconName) => {
@@ -196,7 +199,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
             {/* Color Picker */}
             <div>
               <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                Select Color
+                {t('select_color')}
               </label>
               <div className="flex flex-wrap gap-2">
                 {PRESET_COLORS.map((color) => {
@@ -225,7 +228,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
               disabled={!newName.trim()}
               className="w-full mt-2"
             >
-              Add Category
+              {t('add_category_btn')}
             </GlassButton>
           </GlassCard>
         )}
@@ -248,9 +251,11 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
                   <CategoryIcon name={cat.icon} size={20} color={cat.color} />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-white">{cat.name}</div>
+                  <div className="text-sm font-semibold text-white">
+                    {getLocalizedCategoryName(cat.name, language)}
+                  </div>
                   <div className="text-[11px] text-slate-400">
-                    {cat.is_custom ? 'Custom category' : 'Standard default'}
+                    {cat.is_custom ? t('custom_cat_badge') : t('standard_cat_badge')}
                   </div>
                 </div>
               </div>
@@ -274,11 +279,13 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
       {deleteConfirmCat && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
           <GlassCard className="max-w-xs w-full space-y-3">
-            <h4 className="text-base font-bold text-white">Delete Category?</h4>
+            <h4 className="text-base font-bold text-white">{t('confirm_delete_category')}</h4>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Deleting <strong className="text-rose-400">{deleteConfirmCat.name}</strong> will reassign all its transactions to{' '}
+              {t('delete_cat_modal_desc')}{' '}
               <strong className="text-white">
-                {deleteConfirmCat.type === 'income' ? 'Other Income' : 'Other Expense'}
+                {deleteConfirmCat.type === 'income'
+                  ? getLocalizedCategoryName('Other Income', language)
+                  : getLocalizedCategoryName('Other Expense', language)}
               </strong>
               .
             </p>
@@ -288,14 +295,14 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
                 onClick={() => setDeleteConfirmCat(null)}
                 className="flex-1 py-2.5 rounded-xl bg-white/[0.08] text-slate-300 text-xs font-semibold"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(deleteConfirmCat)}
                 className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-lg shadow-rose-600/30"
               >
-                Confirm Delete
+                {t('confirm_delete_btn')}
               </button>
             </div>
           </GlassCard>

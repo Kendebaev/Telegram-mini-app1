@@ -1,13 +1,14 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight, Plus, Minus } from 'lucide-react';
 import { useTransactionStore } from '../../stores/transactionStore';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useSettingsStore, useTranslation } from '../../stores/settingsStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useTelegram } from '../../context/TelegramContext';
 
 export const TotalNetBalance: React.FC = () => {
   const { getCurrentBalance, transactions } = useTransactionStore();
   const { formatAmount } = useSettingsStore();
+  const { t } = useTranslation();
   const { openAddTransaction } = useUIStore();
   const { haptic } = useTelegram();
 
@@ -40,13 +41,13 @@ export const TotalNetBalance: React.FC = () => {
           {/* Header Row */}
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-500 dark:text-zinc-400">
-              Total Net Balance
+              {t('total_net_balance')}
             </span>
 
             {/* Savings Rate Badge with pulsing green dot */}
             <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 backdrop-blur-md">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{savingsRate >= 0 ? `${savingsRate}% saved` : `${Math.abs(savingsRate)}% deficit`}</span>
+              <span>{savingsRate >= 0 ? `${savingsRate}% ${t('saved_badge')}` : `${Math.abs(savingsRate)}% ${t('deficit_badge')}`}</span>
             </div>
           </div>
 
@@ -56,7 +57,7 @@ export const TotalNetBalance: React.FC = () => {
               {formatAmount(currentBalance)}
             </div>
             <div className="text-xs text-slate-400 dark:text-zinc-500 font-medium mt-1">
-              Live computed across starting balance & all transactions
+              {t('live_balance_sub')}
             </div>
           </div>
 
@@ -73,7 +74,7 @@ export const TotalNetBalance: React.FC = () => {
               <div className="w-4 h-4 rounded-full bg-emerald-500/15 flex items-center justify-center">
                 <Plus size={11} className="stroke-[3]" />
               </div>
-              <span>+ Add Income</span>
+              <span>{t('add_income_btn')}</span>
             </button>
 
             <button
@@ -87,7 +88,7 @@ export const TotalNetBalance: React.FC = () => {
               <div className="w-4 h-4 rounded-full bg-rose-500/15 flex items-center justify-center">
                 <Minus size={11} className="stroke-[3]" />
               </div>
-              <span>− Add Expense</span>
+              <span>{t('add_expense_btn')}</span>
             </button>
           </div>
         </div>
@@ -99,7 +100,7 @@ export const TotalNetBalance: React.FC = () => {
         <div className="p-4 rounded-3xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] transition-colors duration-200">
           <div className="flex items-center space-x-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-1">
             <ArrowUpRight size={14} className="stroke-[2.5]" />
-            <span className="text-slate-500 dark:text-zinc-400 font-medium">Income this Mo.</span>
+            <span className="text-slate-500 dark:text-zinc-400 font-medium">{t('income_this_month')}</span>
           </div>
           <div className="text-lg font-bold tabular-nums text-slate-900 dark:text-white">
             +{formatAmount(thisMonthIncome)}
@@ -110,7 +111,7 @@ export const TotalNetBalance: React.FC = () => {
         <div className="p-4 rounded-3xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] transition-colors duration-200">
           <div className="flex items-center space-x-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 mb-1">
             <ArrowDownRight size={14} className="stroke-[2.5]" />
-            <span className="text-slate-500 dark:text-zinc-400 font-medium">Expenses this Mo.</span>
+            <span className="text-slate-500 dark:text-zinc-400 font-medium">{t('expense_this_month')}</span>
           </div>
           <div className="text-lg font-bold tabular-nums text-slate-900 dark:text-white">
             -{formatAmount(thisMonthExpense)}

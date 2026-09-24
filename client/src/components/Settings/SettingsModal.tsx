@@ -15,9 +15,10 @@ import {
   Trash2,
   Hash,
   Plus,
+  Languages,
 } from 'lucide-react';
 import { useTelegram } from '../../context/TelegramContext';
-import { useSettingsStore, SUPPORTED_CURRENCIES } from '../../stores/settingsStore';
+import { useSettingsStore, SUPPORTED_CURRENCIES, useTranslation } from '../../stores/settingsStore';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useUIStore } from '../../stores/uiStore';
@@ -38,6 +39,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     wipeData,
     formatAmount,
   } = useSettingsStore();
+  const { t, language, setLanguage } = useTranslation();
   const {
     transactions,
     hashtagSuggestions,
@@ -120,7 +122,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         <div className="p-4 px-5 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between bg-white/70 dark:bg-white/[0.02]">
           <div className="flex items-center space-x-2">
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">
-              Settings & Preferences
+              {t('settings_preferences')}
             </h3>
           </div>
           <button
@@ -157,7 +159,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </span>
                 {isInsideTelegram && (
                   <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
-                    Verified
+                    {t('verified')}
                   </span>
                 )}
               </div>
@@ -167,13 +169,72 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
+          {/* Section 0: Bilingual Language Selector */}
+          <div className="p-4 rounded-2.5xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+            <div className="flex items-center space-x-2">
+              <div className="w-7 h-7 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <Languages size={15} />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-slate-900 dark:text-white block">{t('language')}</span>
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500">{t('language_description')}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={async () => {
+                  haptic.selection();
+                  await setLanguage('en');
+                }}
+                className={`p-2.5 rounded-2xl border text-left flex items-center justify-between transition-all active:scale-95 ${
+                  language === 'en'
+                    ? 'bg-indigo-50 dark:bg-indigo-600/30 border-indigo-400 text-indigo-900 dark:text-white shadow-2xs'
+                    : 'bg-white/60 dark:bg-white/[0.02] border-slate-200/80 dark:border-white/[0.06] text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🇬🇧</span>
+                  <div>
+                    <span className="text-xs font-bold block">English</span>
+                    <span className="text-[9px] text-slate-400">EN</span>
+                  </div>
+                </div>
+                {language === 'en' && <Check size={13} className="text-indigo-600 dark:text-indigo-400 shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  haptic.selection();
+                  await setLanguage('ru');
+                }}
+                className={`p-2.5 rounded-2xl border text-left flex items-center justify-between transition-all active:scale-95 ${
+                  language === 'ru'
+                    ? 'bg-indigo-50 dark:bg-indigo-600/30 border-indigo-400 text-indigo-900 dark:text-white shadow-2xs'
+                    : 'bg-white/60 dark:bg-white/[0.02] border-slate-200/80 dark:border-white/[0.06] text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🇷🇺</span>
+                  <div>
+                    <span className="text-xs font-bold block">Русский</span>
+                    <span className="text-[9px] text-slate-400">RU</span>
+                  </div>
+                </div>
+                {language === 'ru' && <Check size={13} className="text-indigo-600 dark:text-indigo-400 shrink-0" />}
+              </button>
+            </div>
+          </div>
+
           {/* Section 1: Appearance / Theme Switcher */}
           <div className="p-4 rounded-2.5xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/[0.08] space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                Appearance
+                {t('appearance')}
               </span>
-              <span className="text-[11px] text-slate-400 dark:text-zinc-500">Liquid Glass Theme</span>
+              <span className="text-[11px] text-slate-400 dark:text-zinc-500">{t('theme_liquid')}</span>
             </div>
 
             <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.06]">
@@ -190,7 +251,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 }`}
               >
                 <Moon size={13} />
-                <span>Dark</span>
+                <span>{t('dark')}</span>
               </button>
 
               <button
@@ -206,7 +267,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 }`}
               >
                 <Sun size={13} />
-                <span>Light</span>
+                <span>{t('light')}</span>
               </button>
 
               <button
@@ -222,7 +283,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 }`}
               >
                 <Smartphone size={13} />
-                <span>System</span>
+                <span>{t('system')}</span>
               </button>
             </div>
           </div>
@@ -234,8 +295,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 <Coins size={15} />
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white block">Active Currency</span>
-                <span className="text-[10px] text-slate-400 dark:text-zinc-500">Formatting symbol across all views</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white block">{t('active_currency')}</span>
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500">{t('currency_description')}</span>
               </div>
             </div>
 
@@ -246,7 +307,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 type="text"
                 value={currencySearch}
                 onChange={(e) => setCurrencySearch(e.target.value)}
-                placeholder="Search currency (e.g. KZT, USD, €)..."
+                placeholder={t('search_currency_placeholder')}
                 className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.06] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-indigo-500"
               />
             </div>
@@ -299,13 +360,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 <FolderTree size={16} />
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white block">Category Management</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white block">{t('category_management')}</span>
                 <span className="text-[11px] text-slate-400 dark:text-zinc-500">
-                  {categories.length} categories • Manage custom icons & colors
+                  {categories.length} {t('categories').toLowerCase()}
                 </span>
               </div>
             </div>
-            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">Configure</span>
+            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{t('configure')}</span>
           </div>
 
           {/* Section 4: Suggested Hashtags Management */}
@@ -315,8 +376,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 <Hash size={15} />
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white block">Suggested Hashtags</span>
-                <span className="text-[10px] text-slate-400 dark:text-zinc-500">Quick-tag suggestions for logging transactions</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white block">{t('suggested_hashtags')}</span>
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500">{t('suggested_hashtags_sub')}</span>
               </div>
             </div>
 
@@ -328,7 +389,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   type="text"
                   value={newHashtagInput}
                   onChange={(e) => setNewHashtagInput(e.target.value)}
-                  placeholder="new-tag (e.g. coffee, rent)"
+                  placeholder={t('new_tag_placeholder')}
                   className="w-full pl-7 pr-3 py-2 rounded-xl bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.06] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
@@ -338,14 +399,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 className="py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-1 active:scale-95 transition-all shadow-xs"
               >
                 <Plus size={13} />
-                <span>Add</span>
+                <span>{t('add')}</span>
               </button>
             </form>
 
             {/* Hashtag Badges */}
             <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto no-scrollbar pt-1">
               {hashtagSuggestions.length === 0 ? (
-                <span className="text-[11px] text-slate-400 dark:text-zinc-500 italic py-1">No hashtags registered yet</span>
+                <span className="text-[11px] text-slate-400 dark:text-zinc-500 italic py-1">{t('no_tags_yet')}</span>
               ) : (
                 hashtagSuggestions.map((tag) => (
                   <span
@@ -374,8 +435,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 <Download size={15} />
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white block">Data Export</span>
-                <span className="text-[10px] text-slate-400 dark:text-zinc-500">Download or dispatch records to chat</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white block">{t('export_backup')}</span>
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500">{t('export_sub')}</span>
               </div>
             </div>
 
@@ -386,7 +447,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-white dark:bg-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.08] text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-white/[0.08] active:scale-95 transition-all text-xs font-semibold shadow-2xs"
               >
                 <FileSpreadsheet size={15} className="text-emerald-600 dark:text-emerald-400" />
-                <span>Export CSV</span>
+                <span>{t('export_csv')}</span>
               </button>
 
               <button
@@ -395,12 +456,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-white dark:bg-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.08] text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-white/[0.08] active:scale-95 transition-all text-xs font-semibold shadow-2xs"
               >
                 <Download size={15} className="text-indigo-600 dark:text-indigo-400" />
-                <span>Export JSON</span>
+                <span>{t('export_json')}</span>
               </button>
             </div>
           </div>
 
-          {/* Section 5: Starting Balance Editor */}
+          {/* Section 6: Starting Balance Editor */}
           <div className="p-4 rounded-2.5xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/[0.08] space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -408,8 +469,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   <Wallet size={15} />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-white block">Starting Balance</span>
-                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">Baseline before recorded transactions</span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block">{t('starting_balance')}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">{t('baseline_desc')}</span>
                 </div>
               </div>
 
@@ -422,7 +483,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 }}
                 className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
               >
-                {isEditingBalance ? 'Cancel' : 'Edit'}
+                {isEditingBalance ? t('cancel') : t('edit')}
               </button>
             </div>
 
@@ -442,7 +503,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   onClick={handleSaveBalance}
                   className="py-2 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold active:scale-95 shadow-xs"
                 >
-                  Save
+                  {t('save')}
                 </button>
               </div>
             ) : (
@@ -452,14 +513,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             )}
           </div>
 
-          {/* Section 6: Danger Zone */}
+          {/* Section 7: Danger Zone */}
           <div className="p-4 rounded-2.5xl bg-rose-500/[0.05] border border-rose-500/20 space-y-2">
             <div className="flex items-center space-x-1.5 text-rose-600 dark:text-rose-400">
               <AlertTriangle size={14} />
-              <span className="text-[11px] font-bold uppercase tracking-wider">Danger Zone</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider">{t('danger_zone')}</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-zinc-400 leading-relaxed">
-              Wipe all transactions, custom categories, and hashtag history to start completely fresh.
+              {t('danger_sub')}
             </p>
             <button
               type="button"
@@ -470,7 +531,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               className="w-full py-2.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 active:scale-98 transition-all text-xs font-bold flex items-center justify-center gap-1.5"
             >
               <Trash2 size={13} />
-              <span>Reset All Account Data</span>
+              <span>{t('reset_data_btn')}</span>
             </button>
           </div>
         </div>
@@ -482,10 +543,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           <div className="max-w-xs w-full p-5 rounded-3xl bg-white dark:bg-[#0D1322] border border-rose-500/40 shadow-2xl space-y-3">
             <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <AlertTriangle className="text-rose-500" size={17} />
-              <span>Reset Everything?</span>
+              <span>{t('reset_modal_title')}</span>
             </h4>
             <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
-              This action <strong>cannot be undone</strong>. All your logged transactions and custom categories will be permanently deleted.
+              {t('reset_modal_desc')}
             </p>
             <div className="flex gap-2 pt-2">
               <button
@@ -493,14 +554,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 onClick={() => setIsConfirmingWipe(false)}
                 className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.08] text-slate-700 dark:text-slate-300 text-xs font-semibold"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmWipe}
                 className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-md shadow-rose-600/30"
               >
-                Yes, Reset All
+                {t('reset_confirm_btn')}
               </button>
             </div>
           </div>

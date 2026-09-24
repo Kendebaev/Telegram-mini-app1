@@ -28,7 +28,8 @@ import {
 import { apiRequest } from '../../utils/api';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useCategoryStore } from '../../stores/categoryStore';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useSettingsStore, useTranslation } from '../../stores/settingsStore';
+import { getLocalizedCategoryName } from '../../utils/translations';
 import { useTelegram } from '../../context/TelegramContext';
 import { CategoryIcon } from '../glass/CategoryIcon';
 import { GlassCard } from '../glass/GlassCard';
@@ -41,6 +42,7 @@ export const AnalyticsView: React.FC = () => {
   const { transactions } = useTransactionStore();
   const { getCategoryById } = useCategoryStore();
   const { formatAmount } = useSettingsStore();
+  const { t, language } = useTranslation();
   const { haptic } = useTelegram();
 
   const [activeTab, setActiveTab] = useState<AnalyticsTab>('breakdown');
@@ -228,10 +230,10 @@ export const AnalyticsView: React.FC = () => {
       {/* 4 View Tabs Navigation */}
       <div className="p-1 rounded-2xl bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl border border-slate-200/80 dark:border-white/[0.08] shadow-2xs flex transition-colors">
         {[
-          { id: 'breakdown' as AnalyticsTab, label: 'Breakdown', icon: PieChart },
-          { id: 'cashflow' as AnalyticsTab, label: 'Cash Flow', icon: TrendingUp },
-          { id: 'trend' as AnalyticsTab, label: 'Trend', icon: LineChart },
-          { id: 'insights' as AnalyticsTab, label: 'Insights', icon: Lightbulb },
+          { id: 'breakdown' as AnalyticsTab, label: t('breakdown_tab'), icon: PieChart },
+          { id: 'cashflow' as AnalyticsTab, label: t('cashflow_tab'), icon: TrendingUp },
+          { id: 'trend' as AnalyticsTab, label: t('trend_tab'), icon: LineChart },
+          { id: 'insights' as AnalyticsTab, label: t('insights_tab'), icon: Lightbulb },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -260,11 +262,11 @@ export const AnalyticsView: React.FC = () => {
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar py-0.5 px-0.5">
           {[
-            { id: 'day' as PeriodOption, label: 'Day' },
-            { id: 'week' as PeriodOption, label: 'Week' },
-            { id: 'month' as PeriodOption, label: 'Month' },
-            { id: 'all' as PeriodOption, label: 'All Time' },
-            { id: 'custom' as PeriodOption, label: 'Custom' },
+            { id: 'day' as PeriodOption, label: t('day') },
+            { id: 'week' as PeriodOption, label: t('week') },
+            { id: 'month' as PeriodOption, label: t('month') },
+            { id: 'all' as PeriodOption, label: t('all_time') },
+            { id: 'custom' as PeriodOption, label: t('custom') },
           ].map((item) => {
             const isSelected = period === item.id;
             return (
@@ -296,7 +298,7 @@ export const AnalyticsView: React.FC = () => {
             <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
               <span className="flex items-center gap-1">
                 <Calendar size={13} className="text-indigo-500" />
-                Select Date Range
+                {t('select_date_range')}
               </span>
               {(customStartDate || customEndDate) && (
                 <button
@@ -308,14 +310,14 @@ export const AnalyticsView: React.FC = () => {
                   className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-0.5"
                 >
                   <X size={11} />
-                  Clear
+                  {t('clear')}
                 </button>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] text-slate-400 dark:text-zinc-500 block mb-0.5">Start Date</label>
+                <label className="text-[10px] text-slate-400 dark:text-zinc-500 block mb-0.5">{t('start_date')}</label>
                 <input
                   type="date"
                   value={customStartDate}
@@ -324,7 +326,7 @@ export const AnalyticsView: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 dark:text-zinc-500 block mb-0.5">End Date</label>
+                <label className="text-[10px] text-slate-400 dark:text-zinc-500 block mb-0.5">{t('end_date')}</label>
                 <input
                   type="date"
                   value={customEndDate}
@@ -354,7 +356,7 @@ export const AnalyticsView: React.FC = () => {
                   : 'bg-white/70 dark:bg-white/[0.03] border-slate-200/80 dark:border-white/[0.06] text-slate-500 dark:text-slate-400'
               }`}
             >
-              Expense Breakdown
+              {t('expense_breakdown')}
             </button>
             <button
               type="button"
@@ -368,14 +370,14 @@ export const AnalyticsView: React.FC = () => {
                   : 'bg-white/70 dark:bg-white/[0.03] border-slate-200/80 dark:border-white/[0.06] text-slate-500 dark:text-slate-400'
               }`}
             >
-              Income Breakdown
+              {t('income_breakdown')}
             </button>
           </div>
 
           {/* Donut Chart (With High-Contrast Light & Dark Mode Text) */}
           <GlassCard className="p-4 rounded-3xl">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-2 text-center">
-              {breakdownType === 'expense' ? 'Expenses by Category' : 'Income by Source'}
+              {breakdownType === 'expense' ? t('expenses_by_category') : t('income_by_source')}
             </div>
 
             {pieChartData.length > 0 ? (
@@ -401,7 +403,9 @@ export const AnalyticsView: React.FC = () => {
                           const data = payload[0].payload;
                           return (
                             <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-3.5 py-2 rounded-xl border border-slate-200/90 dark:border-white/20 text-xs shadow-xl space-y-0.5">
-                              <span className="font-bold text-slate-900 dark:text-white">{data.name}</span>:{' '}
+                              <span className="font-bold text-slate-900 dark:text-white">
+                                {getLocalizedCategoryName(data.name, language)}
+                              </span>:{' '}
                               <span className="text-indigo-600 dark:text-indigo-400 font-mono font-bold">
                                 {formatAmount(data.value)} ({data.percentage}%)
                               </span>
@@ -417,7 +421,7 @@ export const AnalyticsView: React.FC = () => {
                 {/* Center Metric (Fully Visible in Both Light and Dark Themes) */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                    Total
+                    {t('total')}
                   </span>
                   <span className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tabular-nums">
                     {formatAmount(totalPeriodAmount)}
@@ -426,7 +430,7 @@ export const AnalyticsView: React.FC = () => {
               </div>
             ) : (
               <div className="py-12 text-center text-xs text-slate-500 dark:text-zinc-400">
-                No {breakdownType} entries recorded for this {period}.
+                {t('no_entries_period')}
               </div>
             )}
           </GlassCard>
@@ -446,8 +450,12 @@ export const AnalyticsView: React.FC = () => {
                     <CategoryIcon name={item.icon} size={18} color={item.color} />
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white block">{item.name}</span>
-                    <span className="text-[10px] text-slate-500 dark:text-zinc-400">{item.count} transactions</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                      {getLocalizedCategoryName(item.name, language)}
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-zinc-400">
+                      {item.count} {t('tx_count_label')}
+                    </span>
                   </div>
                 </div>
 
@@ -456,7 +464,7 @@ export const AnalyticsView: React.FC = () => {
                     {formatAmount(item.amount)}
                   </span>
                   <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">
-                    {item.percentage}% of total
+                    {item.percentage}% {t('of_total')}
                   </span>
                 </div>
               </div>
@@ -473,7 +481,7 @@ export const AnalyticsView: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                  Net Savings ({period === 'all' ? 'All Time' : period === 'custom' ? 'Selected Period' : `This ${period.charAt(0).toUpperCase() + period.slice(1)}`})
+                  {t('net_savings')} ({period === 'all' ? t('all_time') : period === 'custom' ? t('custom_range') : period})
                 </span>
                 <div
                   className={`text-2xl font-extrabold tabular-nums tracking-tight mt-0.5 ${
@@ -492,7 +500,7 @@ export const AnalyticsView: React.FC = () => {
                     : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-500/20 dark:border-amber-500/40 dark:text-amber-300'
                 }`}
               >
-                {savingsRate}% Savings Rate
+                {savingsRate}% {t('savings_rate')}
               </div>
             </div>
 
@@ -501,16 +509,16 @@ export const AnalyticsView: React.FC = () => {
               {/* Header with Compact Legend */}
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
-                  Monthly Inflow vs Outflow
+                  {t('monthly_inflow_outflow')}
                 </span>
                 <div className="flex items-center space-x-3 text-[11px] font-semibold">
                   <div className="flex items-center space-x-1.5 text-slate-600 dark:text-zinc-300">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-2xs" />
-                    <span>Inflow</span>
+                    <span>{t('inflow_legend')}</span>
                   </div>
                   <div className="flex items-center space-x-1.5 text-slate-600 dark:text-zinc-300">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-2xs" />
-                    <span>Outflow</span>
+                    <span>{t('outflow_legend')}</span>
                   </div>
                 </div>
               </div>
@@ -544,15 +552,15 @@ export const AnalyticsView: React.FC = () => {
                             <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-3.5 py-2.5 rounded-2xl border border-slate-200/90 dark:border-white/20 text-xs shadow-xl space-y-1.5 min-w-[150px]">
                               <div className="font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-white/10 pb-1">{label}</div>
                               <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
-                                <span>Inflow:</span>
+                                <span>{t('inflow_legend')}:</span>
                                 <span className="tabular-nums">+{formatAmount(inc)}</span>
                               </div>
                               <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 font-semibold">
-                                <span>Outflow:</span>
+                                <span>{t('outflow_legend')}:</span>
                                 <span className="tabular-nums">-{formatAmount(exp)}</span>
                               </div>
                               <div className={`flex items-center justify-between font-bold pt-1 border-t border-slate-100 dark:border-white/10 ${net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                <span>Net Margin:</span>
+                                <span>{t('net_margin')}:</span>
                                 <span className="tabular-nums">{net >= 0 ? '+' : ''}{formatAmount(net)}</span>
                               </div>
                             </div>
@@ -562,8 +570,8 @@ export const AnalyticsView: React.FC = () => {
                       }}
                     />
                     {/* Bars with Vertical SVG Gradients & Rounded Radius */}
-                    <Bar dataKey="income" fill="url(#inflowGrad)" radius={[6, 6, 0, 0]} name="Inflow" />
-                    <Bar dataKey="expense" fill="url(#outflowGrad)" radius={[6, 6, 0, 0]} name="Outflow" />
+                    <Bar dataKey="income" fill="url(#inflowGrad)" radius={[6, 6, 0, 0]} name={t('inflow_legend')} />
+                    <Bar dataKey="expense" fill="url(#outflowGrad)" radius={[6, 6, 0, 0]} name={t('outflow_legend')} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -580,9 +588,9 @@ export const AnalyticsView: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
-                    Avg Savings
+                    {t('avg_savings')}
                   </span>
-                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">Monthly Net</span>
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">{t('monthly_net')}</span>
                 </div>
               </div>
 
@@ -591,7 +599,7 @@ export const AnalyticsView: React.FC = () => {
                   {averageSavings >= 0 ? '+' : ''}{formatAmount(averageSavings)}
                 </div>
                 <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  Surplus across periods
+                  {t('surplus_across_periods')}
                 </div>
               </div>
             </GlassCard>
@@ -604,9 +612,9 @@ export const AnalyticsView: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
-                    Burn Rate
+                    {t('burn_rate')}
                   </span>
-                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">Monthly Outflow</span>
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">{t('monthly_outflow')}</span>
                 </div>
               </div>
 
@@ -615,7 +623,7 @@ export const AnalyticsView: React.FC = () => {
                   -{formatAmount(monthlyBurnRate)}
                 </div>
                 <div className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 mt-0.5">
-                  ~{formatAmount(dailyBurnRate)}/day pace
+                  ~{formatAmount(dailyBurnRate)}/{t('day_pace')}
                 </div>
               </div>
             </GlassCard>
@@ -630,14 +638,14 @@ export const AnalyticsView: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                  Spending Curve ({period === 'all' ? 'All Time' : period})
+                  {t('spending_curve')} ({period === 'all' ? t('all_time') : period})
                 </span>
                 <div className="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">
                   {formatAmount(periodExpense)}
                 </div>
               </div>
 
-              <span className="text-xs text-slate-400 dark:text-zinc-500 capitalize">{period} Filtered</span>
+              <span className="text-xs text-slate-400 dark:text-zinc-500 capitalize">{period}</span>
             </div>
 
             {dailySpending.length > 0 ? (
@@ -689,7 +697,7 @@ export const AnalyticsView: React.FC = () => {
               </div>
             ) : (
               <div className="py-12 text-center text-xs text-slate-500 dark:text-zinc-400">
-                No daily spending recorded for this {period}.
+                {t('no_entries_period')}
               </div>
             )}
           </GlassCard>
@@ -708,13 +716,13 @@ export const AnalyticsView: React.FC = () => {
               <ShieldCheck size={22} />
             </div>
             <div>
-              <div className="text-xs font-bold text-slate-900 dark:text-white">Financial Health Status</div>
+              <div className="text-xs font-bold text-slate-900 dark:text-white">{t('financial_health')}</div>
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
                 {savingsRate >= 30
-                  ? 'Strong surplus! You are saving over 30% of your income.'
+                  ? t('health_great')
                   : savingsRate >= 10
-                  ? 'Healthy balance. Your cash flow is in positive territory.'
-                  : 'Spending pace is close to income. Keep an eye on non-essential categories.'}
+                  ? t('health_good')
+                  : t('health_warn')}
               </p>
             </div>
           </GlassCard>
@@ -724,7 +732,7 @@ export const AnalyticsView: React.FC = () => {
             <GlassCard className="p-4 rounded-3xl space-y-3">
               <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
                 <Tag size={14} className="text-indigo-500" />
-                <span>Top Hashtags by Spend</span>
+                <span>{t('top_hashtags_spend')}</span>
               </div>
 
               <div className="space-y-2">
@@ -743,10 +751,10 @@ export const AnalyticsView: React.FC = () => {
           {/* Month-over-month Delta */}
           <GlassCard className="p-4 rounded-3xl space-y-2">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
-              Month-over-Month Change
+              {t('month_over_month')}
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-zinc-400">Expense Trend</span>
+              <span className="text-xs text-slate-500 dark:text-zinc-400">{t('expense_trend')}</span>
               <span
                 className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
                   (analyticsData?.summary?.monthExpenseDeltaPercent || 0) <= 0
@@ -755,7 +763,7 @@ export const AnalyticsView: React.FC = () => {
                 }`}
               >
                 {(analyticsData?.summary?.monthExpenseDeltaPercent || 0) > 0 ? '+' : ''}
-                {analyticsData?.summary?.monthExpenseDeltaPercent || 0}% vs last month
+                {analyticsData?.summary?.monthExpenseDeltaPercent || 0}% {t('vs_last_month')}
               </span>
             </div>
           </GlassCard>

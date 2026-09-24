@@ -133,7 +133,9 @@ async function ensureDbUser(from: {
   first_name: string;
   last_name?: string;
   username?: string;
+  language_code?: string;
 }) {
+  const initialLang = from.language_code?.toLowerCase().startsWith('ru') ? 'ru' : 'en';
   return await prisma.user.upsert({
     where: { telegram_id: BigInt(from.id) },
     update: {
@@ -148,6 +150,7 @@ async function ensureDbUser(from: {
       username: from.username || null,
       currency: 'USD',
       starting_balance: 0.0,
+      language: initialLang,
     },
   });
 }
@@ -181,8 +184,48 @@ async function handleIncomingMessage(message: any) {
 
   if (!chatId || !from) return;
 
-  const ru = isRu(from.language_code);
   const dbUser = await ensureDbUser(from);
+  const ru = (dbUser.language || from.language_code || '').toLowerCase().startsWith('ru');
+
+  // Command: /lang or /language
+  if (text.startsWith('/lang') || text.startsWith('/language')) {
+    const parts = text.split(/\s+/);
+    if (parts[1]?.toLowerCase() === 'ru') {
+      await prisma.user.update({
+        where: { telegram_id: BigInt(from.id) },
+        data: { language: 'ru' },
+      });
+      await tgCall('sendMessage', {
+        chat_id: chatId,
+        text: '🇷🇺 Язык успешно переключен на русский.',
+      });
+      return;
+    } else if (parts[1]?.toLowerCase() === 'en') {
+      await prisma.user.update({
+        where: { telegram_id: BigInt(from.id) },
+        data: { language: 'en' },
+      });
+      await tgCall('sendMessage', {
+        chat_id: chatId,
+        text: '🇬🇧 Language switched to English.',
+      });
+      return;
+    }
+
+    await tgCall('sendMessage', {
+      chat_id: chatId,
+      text: ru ? '🌐 Выберите язык приложения и бота:' : '🌐 Select app and bot language:',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🇬🇧 English', callback_data: 'l:en' },
+            { text: '🇷🇺 Русский', callback_data: 'l:ru' },
+          ],
+        ],
+      },
+    });
+    return;
+  }
 
   // Command: /start
   if (text.startsWith('/start')) {
@@ -310,14 +353,56 @@ async function handleCallbackQuery(query: any) {
 
   if (!queryId || !from || !chatId || !messageId || !data) return;
 
-  const ru = isRu(from.language_code);
-
   // Acknowledge callback immediately to remove loading state in Telegram client
   try {
     await tgCall('answerCallbackQuery', { callback_query_id: queryId });
   } catch (err) {
     // Non-fatal
   }
+
+  // Language change action
+  if (data.startsWith('l:')) {
+    const chosenLang = data.substring(2) as 'en' | 'ru';
+    await prisma.user.upsert({
+      where: { telegram_id: BigInt(from.id) },
+      update: { language: chosenLang },
+      create: {
+        telegram_id: BigInt(from.id),
+        first_name: from.first_name,
+        last_name: from.last_name || null,
+        username: from.username || null,
+        currency: 'USD',
+        language: chosenLang,
+      },
+    });
+
+    const isNowRu = chosenLang === 'ru';
+    const textConfirm = isNowRu
+      ? '🇷🇺 Язык успешно изменен на русский!\nНастройки синхронизированы с приложением Vault.'
+      : '🇬🇧 Language successfully set to English!\nSettings synchronized with Vault Mini App.';
+
+    await tgCall('editMessageText', {
+      chat_id: chatId,
+      message_id: messageId,
+      text: textConfirm,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: isNowRu ? '🚀 Открыть Vault' : '🚀 Open Vault',
+              web_app: { url: WEBAPP_URL },
+            },
+          ],
+        ],
+      },
+    });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { telegram_id: BigInt(from.id) },
+  });
+  const ru = (user?.language || from.language_code || '').toLowerCase().startsWith('ru');
 
   // Cancel action
   if (data === 'b:cancel') {
@@ -350,9 +435,6 @@ async function handleCallbackQuery(query: any) {
     return;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { telegram_id: BigInt(from.id) },
-  });
   const currency = user?.currency || 'USD';
   const amountStr = `${formatAmount(draft.amount)} ${currency}`;
 

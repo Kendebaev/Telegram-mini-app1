@@ -1,6 +1,8 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 import { useCategoryStore } from '../../stores/categoryStore';
+import { useTranslation } from '../../stores/settingsStore';
+import { getLocalizedCategoryName } from '../../utils/translations';
 import { CategoryIcon } from '../glass/CategoryIcon';
 import { useTelegram } from '../../context/TelegramContext';
 import type { TransactionType } from '../../types/models';
@@ -19,6 +21,7 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
   onOpenManageCategories,
 }) => {
   const { getCategoriesByType } = useCategoryStore();
+  const { t, language } = useTranslation();
   const { haptic } = useTelegram();
 
   const categories = getCategoriesByType(type);
@@ -27,7 +30,7 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
     <div className="w-full">
       <div className="flex items-center justify-between mb-2.5 px-1">
         <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Category
+          {t('categories')}
         </label>
         <button
           type="button"
@@ -38,7 +41,7 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
           className="text-xs font-medium text-indigo-400 hover:text-indigo-300 active:scale-95 transition-all flex items-center gap-1"
         >
           <Plus size={13} />
-          <span>Manage</span>
+          <span>{t('manage')}</span>
         </button>
       </div>
 
@@ -78,7 +81,7 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
                   isSelected ? 'text-white font-semibold' : 'text-slate-300'
                 }`}
               >
-                {cat.name}
+                {getLocalizedCategoryName(cat.name, language)}
               </span>
             </button>
           );
@@ -96,7 +99,7 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
           <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5 bg-white/[0.05] text-slate-300">
             <Plus size={18} />
           </div>
-          <span className="text-[11px] font-medium text-slate-400">New</span>
+          <span className="text-[11px] font-medium text-slate-400">{t('new_category')}</span>
         </button>
       </div>
     </div>

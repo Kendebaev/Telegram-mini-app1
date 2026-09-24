@@ -2,15 +2,17 @@ import React from 'react';
 import { LayoutDashboard, History, Plus, PieChart } from 'lucide-react';
 import { useTelegram } from '../../context/TelegramContext';
 import { useUIStore } from '../../stores/uiStore';
+import { useTranslation } from '../../stores/settingsStore';
 import type { ActiveTab } from '../../types/models';
 
 export const BottomNav: React.FC = () => {
   const { haptic } = useTelegram();
   const { activeTab, setActiveTab, openAddTransaction } = useUIStore();
+  const { t } = useTranslation();
 
   const leftNavItems: Array<{ id: ActiveTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
-    { id: 'dashboard', label: 'Vault', icon: LayoutDashboard },
-    { id: 'history', label: 'History', icon: History },
+    { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
+    { id: 'history', label: t('history'), icon: History },
   ];
 
   return (
@@ -65,7 +67,7 @@ export const BottomNav: React.FC = () => {
                 haptic.impact('medium');
                 openAddTransaction();
               }}
-              aria-label="Add transaction"
+              aria-label={t('add')}
               className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 text-white p-3 shadow-[0_0_16px_rgba(99,102,241,0.45)] hover:shadow-[0_0_22px_rgba(99,102,241,0.65)] border border-white/30 active:scale-90 transition-transform duration-150 flex items-center justify-center group"
             >
               <Plus size={22} className="stroke-[2.8] transition-transform duration-200 group-hover:rotate-90" />
@@ -102,7 +104,7 @@ export const BottomNav: React.FC = () => {
                         : 'font-medium text-slate-500 dark:text-zinc-400'
                     }`}
                   >
-                    Analytics
+                    {t('analytics')}
                   </span>
                 </button>
               );

@@ -3,7 +3,7 @@ import { X, ArrowLeft, CreditCard, Banknote } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useCategoryStore } from '../../stores/categoryStore';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useSettingsStore, useTranslation } from '../../stores/settingsStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { TactileNumpad, evaluateSimpleExpression } from './TactileNumpad';
@@ -17,6 +17,7 @@ export const AddTransactionScreen: React.FC = () => {
   const { addTransaction, updateTransaction } = useTransactionStore();
   const { categories, getCategoriesByType } = useCategoryStore();
   const { currencyConfig } = useSettingsStore();
+  const { t } = useTranslation();
   const {
     closeAddTransaction,
     preselectedTransactionType,
@@ -152,7 +153,7 @@ export const AddTransactionScreen: React.FC = () => {
         </button>
 
         <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-          {editingTransaction ? 'Edit Transaction' : type === 'income' ? 'Record Income' : 'Record Expense'}
+          {editingTransaction ? t('edit_transaction_title') : type === 'income' ? t('record_income') : t('record_expense')}
         </h2>
 
         <button
@@ -179,7 +180,7 @@ export const AddTransactionScreen: React.FC = () => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <span>Expense</span>
+            <span>{t('expense')}</span>
           </button>
           <button
             type="button"
@@ -190,7 +191,7 @@ export const AddTransactionScreen: React.FC = () => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <span>Income</span>
+            <span>{t('income')}</span>
           </button>
         </div>
 
@@ -201,7 +202,7 @@ export const AddTransactionScreen: React.FC = () => {
           }`}
         >
           <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-            Amount ({currencyConfig.code})
+            {t('amount')} ({currencyConfig.code})
           </div>
           <div className="flex items-center justify-center space-x-1">
             <span
@@ -256,7 +257,7 @@ export const AddTransactionScreen: React.FC = () => {
           {/* Payment Method: Card vs Cash */}
           <div className="glass-card p-3 rounded-2xl">
             <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              Payment Method
+              {t('payment_method')}
             </div>
             <div className="flex gap-1.5">
               <button
@@ -272,7 +273,7 @@ export const AddTransactionScreen: React.FC = () => {
                 }`}
               >
                 <CreditCard size={13} />
-                <span>Card</span>
+                <span>{t('card')}</span>
               </button>
               <button
                 type="button"
@@ -287,7 +288,7 @@ export const AddTransactionScreen: React.FC = () => {
                 }`}
               >
                 <Banknote size={13} />
-                <span>Cash</span>
+                <span>{t('cash')}</span>
               </button>
             </div>
           </div>
@@ -295,7 +296,7 @@ export const AddTransactionScreen: React.FC = () => {
           {/* Date Selector */}
           <div className="glass-card p-3 rounded-2xl">
             <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              Date
+              {t('date_filter')}
             </div>
             <div className="flex gap-1.5">
               <button
@@ -310,7 +311,7 @@ export const AddTransactionScreen: React.FC = () => {
                     : 'bg-white/[0.04] border-white/[0.06] text-slate-400'
                 }`}
               >
-                Today
+                {t('today')}
               </button>
               <button
                 type="button"
@@ -324,7 +325,7 @@ export const AddTransactionScreen: React.FC = () => {
                     : 'bg-white/[0.04] border-white/[0.06] text-slate-400'
                 }`}
               >
-                Yest.
+                {t('yesterday')}
               </button>
               <input
                 type="date"
@@ -352,12 +353,12 @@ export const AddTransactionScreen: React.FC = () => {
             className="w-full shadow-2xl"
           >
             {isSubmitting
-              ? 'Saving...'
+              ? t('saving')
               : editingTransaction
-              ? 'Update Transaction'
+              ? t('update_transaction')
               : type === 'income'
-              ? `Save Income (+${currencyConfig.symbol}${calculatedAmount.toFixed(2)})`
-              : `Save Expense (-${currencyConfig.symbol}${calculatedAmount.toFixed(2)})`}
+              ? `${t('save_income')} (+${currencyConfig.symbol}${calculatedAmount.toFixed(2)})`
+              : `${t('save_expense')} (-${currencyConfig.symbol}${calculatedAmount.toFixed(2)})`}
           </GlassButton>
         </div>
       </div>

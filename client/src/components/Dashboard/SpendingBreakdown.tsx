@@ -1,14 +1,15 @@
-import React from 'react';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useCategoryStore } from '../../stores/categoryStore';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useSettingsStore, useTranslation } from '../../stores/settingsStore';
 import { CategoryIcon } from '../glass/CategoryIcon';
 import { GlassCard } from '../glass/GlassCard';
+import { getLocalizedCategoryName } from '../../utils/translations';
 
 export const SpendingBreakdown: React.FC = () => {
   const { transactions } = useTransactionStore();
   const { getCategoryById } = useCategoryStore();
   const { formatAmount } = useSettingsStore();
+  const { t, language } = useTranslation();
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -52,10 +53,10 @@ export const SpendingBreakdown: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-          Spending Breakdown
+          {t('spending_breakdown')}
         </h3>
         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-white/[0.06]">
-          This Month
+          {t('this_month')}
         </span>
       </div>
 
@@ -76,7 +77,7 @@ export const SpendingBreakdown: React.FC = () => {
                   <CategoryIcon name={item.icon} size={16} color={item.color} />
                 </div>
                 <span className="text-sm font-medium text-slate-800 dark:text-zinc-200 truncate">
-                  {item.name}
+                  {getLocalizedCategoryName(item.name, language)}
                 </span>
               </div>
 
