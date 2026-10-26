@@ -8,40 +8,31 @@ interface TactileNumpadProps {
   onSubmit?: () => void;
 }
 
-export const TactileNumpad: React.FC<TactileNumpadProps> = ({
-  value,
-  onChange,
-  onSubmit,
-}) => {
+const keyBase =
+  'flex h-[50px] items-center justify-center rounded-2xl border border-line bg-panel-inset font-display text-lg font-semibold text-ink transition-all active:scale-[0.94] active:bg-accent-soft';
+
+export const TactileNumpad: React.FC<TactileNumpadProps> = ({ value, onChange, onSubmit }) => {
   const { haptic } = useTelegram();
-  const deleteTimerRef = useRef<any>(null);
+  const deleteTimerRef = useRef<number | null>(null);
 
   const handleKeyPress = (char: string) => {
     haptic.impact('light');
 
-    // Handle operator
     if (char === '+' || char === '-') {
       if (!value || value === '0') return;
-      // Don't add duplicate operators
       if (['+', '-'].includes(value.slice(-1))) {
         onChange(value.slice(0, -1) + char);
         return;
       }
-      // If there is already an expression, evaluate it first
-      try {
-        const evaluated = evaluateSimpleExpression(value);
-        onChange(`${evaluated}${char}`);
-      } catch {
-        onChange(value + char);
-      }
+      const evaluated = evaluateSimpleExpression(value);
+      onChange(`${evaluated}${char}`);
       return;
     }
 
-    // Handle decimal point
     if (char === '.') {
       const parts = value.split(/[+-]/);
       const currentSegment = parts[parts.length - 1];
-      if (currentSegment.includes('.')) return; // already has decimal in current number
+      if (currentSegment.includes('.')) return;
       if (!currentSegment) {
         onChange(value + '0.');
         return;
@@ -50,11 +41,9 @@ export const TactileNumpad: React.FC<TactileNumpadProps> = ({
       return;
     }
 
-    // Handle digits
     const parts = value.split(/[+-]/);
     const currentSegment = parts[parts.length - 1];
 
-    // Restrict to max 2 decimal places
     if (currentSegment && currentSegment.includes('.')) {
       const decimals = currentSegment.split('.')[1];
       if (decimals && decimals.length >= 2) return;
@@ -70,11 +59,8 @@ export const TactileNumpad: React.FC<TactileNumpadProps> = ({
   const handleDelete = () => {
     haptic.impact('medium');
     if (!value || value === '0') return;
-    if (value.length <= 1) {
-      onChange('0');
-    } else {
-      onChange(value.slice(0, -1));
-    }
+    if (value.length <= 1) onChange('0');
+    else onChange(value.slice(0, -1));
   };
 
   const handleClearAll = () => {
@@ -82,148 +68,74 @@ export const TactileNumpad: React.FC<TactileNumpadProps> = ({
     onChange('0');
   };
 
-  const handleTouchStartDelete = () => {
-    deleteTimerRef.current = setTimeout(() => {
+  const startHold = () => {
+    deleteTimerRef.current = window.setTimeout(() => {
       handleClearAll();
     }, 600);
   };
 
-  const handleTouchEndDelete = () => {
+  const endHold = () => {
     if (deleteTimerRef.current) {
-      clearTimeout(deleteTimerRef.current);
+      window.clearTimeout(deleteTimerRef.current);
       deleteTimerRef.current = null;
     }
   };
 
   const handleEvaluate = () => {
     haptic.impact('medium');
-    try {
-      const result = evaluateSimpleExpression(value);
-      onChange(result.toString());
-    } catch {
-      // ignore
-    }
+    onChange(evaluateSimpleExpression(value).toString());
   };
 
   const isExpression = value.includes('+') || value.includes('-');
+  const digit = (n: string) => (
+    <button key={n} type="button" onClick={() => handleKeyPress(n)} className={keyBase}>
+      {n}
+    </button>
+  );
 
   return (
-    <div className="w-full max-w-sm mx-auto grid grid-cols-4 gap-2 px-1">
-      {/* Row 1 */}
-      <button
-        type="button"
-        onClick={() => handleKeyPress('1')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-white active:scale-95 transition-all active:bg-white/20"
-      >
-        1
-      </button>
-      <button
-        type="button"
-        onClick={() => handleKeyPress('2')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-white active:scale-95 transition-all active:bg-white/20"
-      >
-        2
-      </button>
-      <button
-        type="button"
-        onClick={() => handleKeyPress('3')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-white active:scale-95 transition-all active:bg-white/20"
-      >
-        3
-      </button>
+    <div className="grid w-full grid-cols-4 gap-2">
+      {['1', '2', '3'].map(digit)}
       <button
         type="button"
         onClick={() => handleKeyPress('+')}
-        className="glass-card bg-indigo-950/40 border-indigo-500/30 flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-indigo-400 active:scale-95 transition-all"
+        className={`${keyBase} border-accent/25 bg-accent-soft text-accent`}
       >
         +
       </button>
 
-      {/* Row 2 */}
-      <button
-        type="button"
-        onClick={() => handleKeyPress('4')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-white active:scale-95 transition-all active:bg-white/20"
-      >
-        4
-      </button>
-      <button
-        type="button"
-        onClick={() => handleKeyPress('5')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-white active:scale-95 transition-all active:bg-white/20"
-      >
-        5
-      </button>
-      <button
-        type="button"
-        onClick={() => handleKeyPress('6')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-white active:scale-95 transition-all active:bg-white/20"
-      >
-        6
-      </button>
+      {['4', '5', '6'].map(digit)}
       <button
         type="button"
         onClick={() => handleKeyPress('-')}
-        className="glass-card bg-indigo-950/40 border-indigo-500/30 flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-indigo-400 active:scale-95 transition-all"
+        className={`${keyBase} border-accent/25 bg-accent-soft text-accent`}
       >
         −
       </button>
 
-      {/* Row 3 */}
-      <button
-        type="button"
-        onClick={() => handleKeyPress('7')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-white active:scale-95 transition-all active:bg-white/20"
-      >
-        7
-      </button>
-      <button
-        type="button"
-        onClick={() => handleKeyPress('8')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-white active:scale-95 transition-all active:bg-white/20"
-      >
-        8
-      </button>
-      <button
-        type="button"
-        onClick={() => handleKeyPress('9')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-white active:scale-95 transition-all active:bg-white/20"
-      >
-        9
-      </button>
+      {['7', '8', '9'].map(digit)}
       <button
         type="button"
         onClick={handleDelete}
-        onTouchStart={handleTouchStartDelete}
-        onTouchEnd={handleTouchEndDelete}
-        onMouseDown={handleTouchStartDelete}
-        onMouseUp={handleTouchEndDelete}
-        onMouseLeave={handleTouchEndDelete}
+        onTouchStart={startHold}
+        onTouchEnd={endHold}
+        onMouseDown={startHold}
+        onMouseUp={endHold}
+        onMouseLeave={endHold}
         aria-label="Delete or hold to clear"
-        className="glass-card bg-rose-950/30 border-rose-500/25 flex items-center justify-center h-14 rounded-2xl text-rose-400 active:scale-95 transition-all"
+        className={`${keyBase} border-coral/25 bg-coral-soft text-coral`}
       >
-        <Delete size={22} />
+        <Delete size={20} />
       </button>
 
-      {/* Row 4 */}
-      <button
-        type="button"
-        onClick={() => handleKeyPress('.')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-2xl font-bold text-white active:scale-95 transition-all"
-      >
+      <button type="button" onClick={() => handleKeyPress('.')} className={keyBase}>
         .
       </button>
-      <button
-        type="button"
-        onClick={() => handleKeyPress('0')}
-        className="glass-card flex items-center justify-center h-14 rounded-2xl text-xl font-bold text-white active:scale-95 transition-all active:bg-white/20"
-      >
-        0
-      </button>
+      {digit('0')}
       <button
         type="button"
         onClick={handleClearAll}
-        className="glass-card text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-center h-14 rounded-2xl active:scale-95 transition-all hover:text-white"
+        className={`${keyBase} text-[11px] font-bold uppercase tracking-wider text-faint`}
       >
         C
       </button>
@@ -231,9 +143,13 @@ export const TactileNumpad: React.FC<TactileNumpadProps> = ({
         type="button"
         onClick={isExpression ? handleEvaluate : onSubmit}
         aria-label={isExpression ? 'Evaluate' : 'Done'}
-        className="glass-card bg-gradient-to-r from-indigo-500 to-cyan-500 border-indigo-400/40 text-white flex items-center justify-center h-14 rounded-2xl active:scale-95 transition-all shadow-md shadow-indigo-500/30"
+        className="flex h-[50px] items-center justify-center rounded-2xl bg-gradient-to-tr from-accent to-accent-2 text-white shadow-glow transition-all active:scale-[0.94]"
       >
-        {isExpression ? <Equal size={22} className="stroke-[2.5]" /> : <span className="font-bold text-sm">OK</span>}
+        {isExpression ? (
+          <Equal size={20} strokeWidth={2.6} />
+        ) : (
+          <span className="text-[11px] font-bold uppercase tracking-wider">OK</span>
+        )}
       </button>
     </div>
   );
@@ -241,12 +157,9 @@ export const TactileNumpad: React.FC<TactileNumpadProps> = ({
 
 export function evaluateSimpleExpression(expr: string): number {
   if (!expr) return 0;
-  // Clean up trailing operators
   const sanitized = expr.replace(/[+-]$/, '');
   try {
-    // Only allow digits, dot, + and -
     if (!/^[0-9.+-\s]+$/.test(sanitized)) return parseFloat(sanitized) || 0;
-    // Simple parser for + and -
     const tokens = sanitized.match(/([+-]?[0-9.]+)/g);
     if (!tokens) return 0;
     const sum = tokens.reduce((acc, curr) => acc + parseFloat(curr), 0);

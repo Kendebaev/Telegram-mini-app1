@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import type { ActiveTab, Transaction, TransactionType, FilterState } from '../types/models';
+import type {
+  ActiveTab,
+  FilterState,
+  QuickTemplate,
+  Transaction,
+  TransactionType,
+} from '../types/models';
 
 const DEFAULT_FILTERS: FilterState = {
   type: 'all',
@@ -20,11 +26,16 @@ interface UIState {
   selectedTransactionForDetail: Transaction | null;
   editingTransaction: Transaction | null;
   preselectedTransactionType: TransactionType;
+  prefillTemplate: QuickTemplate | null;
   filters: FilterState;
 
   // Actions
   setActiveTab: (tab: ActiveTab) => void;
-  openAddTransaction: (type?: TransactionType, txToEdit?: Transaction) => void;
+  openAddTransaction: (
+    type?: TransactionType,
+    txToEdit?: Transaction,
+    prefill?: QuickTemplate | null,
+  ) => void;
   closeAddTransaction: () => void;
   openManageCategories: () => void;
   closeManageCategories: () => void;
@@ -49,15 +60,17 @@ export const useUIStore = create<UIState>((set) => ({
   selectedTransactionForDetail: null,
   editingTransaction: null,
   preselectedTransactionType: 'expense',
+  prefillTemplate: null,
   filters: DEFAULT_FILTERS,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
-  openAddTransaction: (type = 'expense', txToEdit) => {
+  openAddTransaction: (type = 'expense', txToEdit, prefill = null) => {
     set({
       isAddTransactionOpen: true,
       preselectedTransactionType: type,
       editingTransaction: txToEdit || null,
+      prefillTemplate: prefill,
     });
   },
 
@@ -65,6 +78,7 @@ export const useUIStore = create<UIState>((set) => ({
     set({
       isAddTransactionOpen: false,
       editingTransaction: null,
+      prefillTemplate: null,
     });
   },
 
@@ -76,13 +90,14 @@ export const useUIStore = create<UIState>((set) => ({
 
   setSelectedTransaction: (tx) => set({ selectedTransactionForDetail: tx }),
 
-  // When type = 'all', force category to 'all' because categories are disjoint
+  // Categories are disjoint per type, so reset the category whenever the type changes
   setFilterType: (type) => {
     set((state) => ({
       filters: {
         ...state.filters,
         type,
-        categoryId: type === 'all' ? 'all' : state.filters.categoryId,
+        categoryId:
+          type === 'all' || type !== state.filters.type ? 'all' : state.filters.categoryId,
       },
     }));
   },

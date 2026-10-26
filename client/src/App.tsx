@@ -1,13 +1,15 @@
 import React, { useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { TelegramProvider } from './context/TelegramContext';
 import { Header } from './components/Navigation/Header';
 import { BottomNav } from './components/Navigation/BottomNav';
 import { MockTelegramDevBar } from './components/Navigation/MockTelegramDevBar';
-import { BackgroundMesh } from './components/glass/BackgroundMesh';
+import { AuroraBackground } from './components/ui/AuroraBackground';
+import { ToastHost } from './components/ui/ToastHost';
 import { DashboardView } from './components/Dashboard/DashboardView';
 import { HistoryView } from './components/History/HistoryView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
-import { SettingsScreen } from './components/Settings/SettingsScreen';
+import { PlanView } from './components/Plan/PlanView';
 import { SettingsModal } from './components/Settings/SettingsModal';
 import { AddTransactionScreen } from './components/ExpenseLogging/AddTransactionScreen';
 import { TransactionDetailSheet } from './components/History/TransactionDetailSheet';
@@ -20,7 +22,6 @@ import { useTransactionStore } from './stores/transactionStore';
 const MainLayout: React.FC = () => {
   const {
     activeTab,
-    isAddTransactionOpen,
     isManageCategoriesOpen,
     isSettingsOpen,
     closeManageCategories,
@@ -31,49 +32,41 @@ const MainLayout: React.FC = () => {
   const { fetchCategories } = useCategoryStore();
   const { fetchTransactions, fetchHashtagSuggestions } = useTransactionStore();
 
-  // Startup data hydration
   useEffect(() => {
     fetchProfile();
     fetchCategories();
     fetchTransactions();
     fetchHashtagSuggestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="relative min-h-screen min-h-[100dvh] bg-[#F4F6F9] dark:bg-[#080A0F] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200 overflow-x-hidden selection:bg-indigo-500/30">
-      {/* Glowing ambient background mesh */}
-      <BackgroundMesh />
-
-      {/* Dev Simulator Bar for testing in browser outside Telegram */}
+    <div className="relative flex min-h-[100dvh] flex-col overflow-x-hidden text-ink">
+      <AuroraBackground />
       <MockTelegramDevBar />
-
-      {/* Main App Header */}
       <Header />
 
-      {/* Main Tab Views */}
-      <main className="relative z-10 flex-1 w-full max-w-md mx-auto px-4 py-4 pb-28">
-        {activeTab === 'dashboard' && <DashboardView />}
-        {activeTab === 'history' && <HistoryView />}
-        {activeTab === 'analytics' && <AnalyticsView />}
-        {activeTab === 'settings' && <SettingsScreen />}
+      <main className="relative z-10 mx-auto w-full max-w-md flex-1 px-4 pb-32 pt-2">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {activeTab === 'dashboard' && <DashboardView />}
+          {activeTab === 'history' && <HistoryView />}
+          {activeTab === 'plan' && <PlanView />}
+          {activeTab === 'analytics' && <AnalyticsView />}
+        </motion.div>
       </main>
 
-      {/* Floating Bottom Glass Navigation Dock (strictly 4 elements) */}
       <BottomNav />
 
-      {/* Glassmorphic Settings Modal / Bottom Sheet */}
       <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
-
-      {/* Full-screen Add / Edit Transaction Sheet */}
-      {isAddTransactionOpen && <AddTransactionScreen />}
-
-      {/* Standalone Category Management Modal */}
-      {isManageCategoriesOpen && !isAddTransactionOpen && (
-        <CategoryManagementScreen onClose={closeManageCategories} />
-      )}
-
-      {/* Transaction Detail Bottom Sheet */}
+      <AddTransactionScreen />
+      <CategoryManagementScreen open={isManageCategoriesOpen} onClose={closeManageCategories} />
       <TransactionDetailSheet />
+      <ToastHost />
     </div>
   );
 };

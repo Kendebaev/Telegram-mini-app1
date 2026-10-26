@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
-import { X, Plus, Trash2, ArrowLeft, Check } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Check, Plus, Trash2, X } from 'lucide-react';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useTranslation } from '../../stores/settingsStore';
+import { useToastStore } from '../../stores/toastStore';
 import { getLocalizedCategoryName } from '../../utils/translations';
 import { useTelegram } from '../../context/TelegramContext';
 import { CategoryIcon } from '../glass/CategoryIcon';
-import { GlassButton } from '../glass/GlassButton';
-import { GlassCard } from '../glass/GlassCard';
-import type { TransactionType, Category } from '../../types/models';
+import { IconTile } from '../ui/IconTile';
+import { Segmented } from '../ui/Segmented';
+import { Sheet } from '../ui/Sheet';
+import { Surface } from '../ui/Surface';
+import type { TransactionType } from '../../types/models';
 
 interface CategoryManagementScreenProps {
+  open: boolean;
   onClose: () => void;
   defaultType?: TransactionType;
 }
@@ -27,34 +32,50 @@ const PRESET_COLORS = [
 ];
 
 export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> = ({
+  open,
   onClose,
   defaultType = 'expense',
 }) => {
   const { categories, addCustomCategory, deleteCustomCategory } = useCategoryStore();
   const { t, language } = useTranslation();
   const { haptic, backButton } = useTelegram();
+  const showToast = useToastStore((s) => s.show);
 
   const [activeTab, setActiveTab] = useState<TransactionType>(defaultType);
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('Sparkles');
   const [selectedColor, setSelectedColor] = useState('#818CF8');
-  const [deleteConfirmCat, setDeleteConfirmCat] = useState<Category | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (!open) return;
+    setActiveTab(defaultType);
+    setIsCreating(false);
+    setNewName('');
+    setSelectedIcon('Sparkles');
+    setSelectedColor('#818CF8');
+    setDeleteConfirmId(null);
+  }, [open, defaultType]);
+
+  useEffect(() => {
+    if (!open) return;
     backButton.show();
-    const handleBack = () => onClose();
-    backButton.onClick(handleBack);
+    backButton.onClick(onClose);
     return () => {
-      backButton.offClick(handleBack);
+      backButton.offClick(onClose);
       backButton.hide();
     };
-  }, [backButton, onClose]);
+  }, [open, backButton, onClose]);
 
-  const filteredCategories = categories.filter((c) => c.type === activeTab);
+  const filteredCategories = categories.filter((cat) => cat.type === activeTab);
+  const otherName = getLocalizedCategoryName(
+    activeTab === 'income' ? 'Other Income' : 'Other Expense',
+    language,
+  );
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = async (event?: React.FormEvent) => {
+    event?.preventDefault();
     if (!newName.trim()) return;
 
     haptic.notification('success');
@@ -65,249 +86,249 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
       type: activeTab,
     });
 
+    showToast(t('category_created'), 'success');
     setNewName('');
     setIsCreating(false);
   };
 
-  const handleDelete = async (cat: Category) => {
+  const handleDelete = async (id: string) => {
     haptic.impact('heavy');
-    await deleteCustomCategory(cat.id);
-    setDeleteConfirmCat(null);
+    await deleteCustomCategory(id);
+    setDeleteConfirmId(null);
+    showToast(t('category_deleted'), 'success');
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#070A12]/95 backdrop-blur-2xl flex flex-col safe-top safe-bottom animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <button
-            type="button"
-            onClick={() => {
-              haptic.impact('light');
-              onClose();
-            }}
-            className="p-2 rounded-xl bg-white/[0.06] text-slate-300 active:scale-95 transition-all"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h2 className="text-base font-bold text-white">{t('manage_categories')}</h2>
-            <p className="text-xs text-slate-400">{t('custom_cats_sub')}</p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            haptic.impact('light');
-            setIsCreating(!isCreating);
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={t('manage_categories')}
+      subtitle={t('custom_cats_sub')}
+      zIndex={80}
+    >
+      <div className="space-y-3.5 pb-3">
+        <Segmented
+          value={activeTab}
+          onChange={(value) => {
+            haptic.selection();
+            setActiveTab(value);
+            setIsCreating(false);
+            setDeleteConfirmId(null);
           }}
-          className="p-2 rounded-xl bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 active:scale-95 transition-all"
-        >
-          {isCreating ? <X size={18} /> : <Plus size={18} />}
-        </button>
-      </div>
+          options={[
+            { value: 'expense', label: t('expense_categories') },
+            { value: 'income', label: t('income_categories') },
+          ]}
+          size="sm"
+          accent={activeTab === 'expense' ? 'var(--coral)' : 'var(--mint)'}
+          ariaLabel={t('category_type')}
+        />
 
-      {/* Segmented Type Toggle */}
-      <div className="px-4 py-3">
-        <div className="p-1 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex">
+        {/* Create toggle */}
+        {!isCreating && (
           <button
             type="button"
             onClick={() => {
               haptic.selection();
-              setActiveTab('expense');
+              setIsCreating(true);
+              setDeleteConfirmId(null);
             }}
-            className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'expense'
-                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            className="pressable flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-line-strong py-2.5 text-[11px] font-bold text-accent"
           >
-            {t('expense_categories')}
+            <Plus size={14} />
+            {activeTab === 'expense' ? t('new_expense_cat') : t('new_income_cat')}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              haptic.selection();
-              setActiveTab('income');
-            }}
-            className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'income'
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            {t('income_categories')}
-          </button>
-        </div>
-      </div>
-
-      {/* Main Body */}
-      <div className="flex-1 overflow-y-auto px-4 pb-20 space-y-4 no-scrollbar">
-        {/* Create Form when active */}
-        {isCreating && (
-          <GlassCard variant="accent" className="space-y-3">
-            <h3 className="text-sm font-bold text-white flex items-center justify-between">
-              <span>{activeTab === 'expense' ? t('new_expense_cat') : t('new_income_cat')}</span>
-              <button
-                type="button"
-                onClick={() => setIsCreating(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X size={16} />
-              </button>
-            </h3>
-
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder={t('cat_name_placeholder')}
-              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
-              autoFocus
-            />
-
-            {/* Icon Picker */}
-            <div>
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                {t('select_icon')}
-              </label>
-              <div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto p-1 no-scrollbar">
-                {AVAILABLE_ICONS.map((iconName) => {
-                  const isSelected = selectedIcon === iconName;
-                  return (
-                    <button
-                      key={iconName}
-                      type="button"
-                      onClick={() => {
-                        haptic.selection();
-                        setSelectedIcon(iconName);
-                      }}
-                      className={`p-2 rounded-xl border flex items-center justify-center transition-all ${
-                        isSelected
-                          ? 'bg-indigo-600/30 border-indigo-400 text-white'
-                          : 'bg-white/[0.04] border-white/[0.06] text-slate-400'
-                      }`}
-                    >
-                      <CategoryIcon name={iconName} size={18} />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Color Picker */}
-            <div>
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                {t('select_color')}
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {PRESET_COLORS.map((color) => {
-                  const isSelected = selectedColor === color;
-                  return (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => {
-                        haptic.selection();
-                        setSelectedColor(color);
-                      }}
-                      className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
-                      style={{ backgroundColor: color }}
-                    >
-                      {isSelected && <Check size={16} className="text-white drop-shadow" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <GlassButton
-              variant="primary"
-              onClick={handleCreate}
-              disabled={!newName.trim()}
-              className="w-full mt-2"
-            >
-              {t('add_category_btn')}
-            </GlassButton>
-          </GlassCard>
         )}
 
-        {/* Existing Categories List */}
-        <div className="space-y-2">
-          {filteredCategories.map((cat) => (
-            <div
-              key={cat.id}
-              className="glass-card flex items-center justify-between p-3 rounded-2xl"
+        {/* Create form */}
+        <AnimatePresence initial={false}>
+          {isCreating && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden"
             >
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{
-                    backgroundColor: `${cat.color}25`,
-                    color: cat.color,
-                  }}
-                >
-                  <CategoryIcon name={cat.icon} size={20} color={cat.color} />
+              <Surface tone="inset" className="space-y-3 p-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-ink">
+                    {activeTab === 'expense' ? t('new_expense_cat') : t('new_income_cat')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(false)}
+                    aria-label={t('close')}
+                    className="pressable flex h-6 w-6 items-center justify-center rounded-full bg-panel-solid text-muted"
+                  >
+                    <X size={12} />
+                  </button>
                 </div>
-                <div>
-                  <div className="text-sm font-semibold text-white">
-                    {getLocalizedCategoryName(cat.name, language)}
-                  </div>
-                  <div className="text-[11px] text-slate-400">
-                    {cat.is_custom ? t('custom_cat_badge') : t('standard_cat_badge')}
-                  </div>
-                </div>
-              </div>
 
-              {cat.is_custom && (
-                <button
-                  type="button"
-                  onClick={() => setDeleteConfirmCat(cat)}
-                  className="p-2 rounded-xl text-rose-400 hover:bg-rose-500/20 active:scale-90 transition-all"
-                  aria-label="Delete category"
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
-          ))}
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(event) => setNewName(event.target.value)}
+                  placeholder={t('cat_name_placeholder')}
+                  className="h-10 w-full rounded-xl border border-line bg-panel-solid px-3 text-[12px] font-medium text-ink placeholder:text-faint outline-none focus:border-accent"
+                  autoFocus
+                />
+
+                <div>
+                  <div className="eyebrow mb-1.5">{t('select_icon')}</div>
+                  <div className="no-scrollbar grid max-h-36 grid-cols-6 gap-1.5 overflow-y-auto">
+                    {AVAILABLE_ICONS.map((iconName) => {
+                      const selected = selectedIcon === iconName;
+                      return (
+                        <button
+                          key={iconName}
+                          type="button"
+                          onClick={() => {
+                            haptic.selection();
+                            setSelectedIcon(iconName);
+                          }}
+                          className={`pressable flex h-9 items-center justify-center rounded-xl border ${
+                            selected
+                              ? 'border-accent bg-accent-soft text-accent'
+                              : 'border-line bg-panel-solid text-muted'
+                          }`}
+                        >
+                          <CategoryIcon name={iconName} size={16} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="eyebrow mb-1.5">{t('select_color')}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {PRESET_COLORS.map((color) => {
+                      const selected = selectedColor === color;
+                      return (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => {
+                            haptic.selection();
+                            setSelectedColor(color);
+                          }}
+                          aria-label={color}
+                          className="pressable flex h-7 w-7 items-center justify-center rounded-full transition-transform"
+                          style={{
+                            backgroundColor: color,
+                            boxShadow: selected
+                              ? `0 0 0 2px var(--panel-strong), 0 0 0 4px ${color}`
+                              : undefined,
+                          }}
+                        >
+                          {selected && <Check size={13} className="text-white drop-shadow" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(false)}
+                    className="pressable flex-1 rounded-xl border border-line bg-panel-solid py-2.5 text-[10px] font-bold text-muted"
+                  >
+                    {t('cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleCreate()}
+                    disabled={!newName.trim()}
+                    className="pressable flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent py-2.5 text-[10px] font-bold text-white disabled:opacity-40"
+                  >
+                    <Plus size={12} />
+                    {t('add_category_btn')}
+                  </button>
+                </div>
+              </Surface>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Category list */}
+        <div className="space-y-1.5">
+          {filteredCategories.map((cat) => {
+            const isConfirming = deleteConfirmId === cat.id;
+            return (
+              <Surface
+                key={cat.id}
+                tone="inset"
+                padded={false}
+                className="overflow-hidden"
+              >
+                <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <IconTile icon={cat.icon} color={cat.color} size={36} iconSize={16} />
+                    <div className="min-w-0">
+                      <div className="truncate text-[12px] font-semibold text-ink">
+                        {getLocalizedCategoryName(cat.name, language)}
+                      </div>
+                      <div className="text-[9px] font-medium text-faint">
+                        {cat.is_custom ? t('custom_cat_badge') : t('standard_cat_badge')}
+                      </div>
+                    </div>
+                  </div>
+
+                  {cat.is_custom && !isConfirming && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic.selection();
+                        setDeleteConfirmId(cat.id);
+                      }}
+                      aria-label={t('delete')}
+                      className="pressable flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-coral-soft text-coral"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {isConfirming && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-2 border-t border-line bg-coral-soft px-3.5 py-2.5">
+                        <div className="text-[10px] leading-relaxed text-muted">
+                          {t('delete_cat_modal_desc')}{' '}
+                          <strong className="text-ink">{otherName}</strong>.
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmId(null)}
+                            className="pressable flex-1 rounded-lg border border-line bg-panel-solid py-1.5 text-[10px] font-bold text-muted"
+                          >
+                            {t('cancel')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(cat.id)}
+                            className="pressable flex-1 rounded-lg bg-coral py-1.5 text-[10px] font-bold text-white"
+                          >
+                            {t('confirm_delete_btn')}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Surface>
+            );
+          })}
         </div>
       </div>
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirmCat && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
-          <GlassCard className="max-w-xs w-full space-y-3">
-            <h4 className="text-base font-bold text-white">{t('confirm_delete_category')}</h4>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              {t('delete_cat_modal_desc')}{' '}
-              <strong className="text-white">
-                {deleteConfirmCat.type === 'income'
-                  ? getLocalizedCategoryName('Other Income', language)
-                  : getLocalizedCategoryName('Other Expense', language)}
-              </strong>
-              .
-            </p>
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmCat(null)}
-                className="flex-1 py-2.5 rounded-xl bg-white/[0.08] text-slate-300 text-xs font-semibold"
-              >
-                {t('cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(deleteConfirmCat)}
-                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-lg shadow-rose-600/30"
-              >
-                {t('confirm_delete_btn')}
-              </button>
-            </div>
-          </GlassCard>
-        </div>
-      )}
-    </div>
+    </Sheet>
   );
 };

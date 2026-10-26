@@ -1,116 +1,98 @@
 import React from 'react';
-import { LayoutDashboard, History, Plus, PieChart } from 'lucide-react';
+import { ArrowLeftRight, Home, PieChart, Plus, Target } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useTelegram } from '../../context/TelegramContext';
-import { useUIStore } from '../../stores/uiStore';
 import { useTranslation } from '../../stores/settingsStore';
+import { useUIStore } from '../../stores/uiStore';
 import type { ActiveTab } from '../../types/models';
+
+interface NavItem {
+  id: ActiveTab;
+  labelKey: 'home' | 'activity' | 'plan' | 'insights';
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+}
+
+const LEFT_ITEMS: NavItem[] = [
+  { id: 'dashboard', labelKey: 'home', icon: Home },
+  { id: 'history', labelKey: 'activity', icon: ArrowLeftRight },
+];
+
+const RIGHT_ITEMS: NavItem[] = [
+  { id: 'plan', labelKey: 'plan', icon: Target },
+  { id: 'analytics', labelKey: 'insights', icon: PieChart },
+];
 
 export const BottomNav: React.FC = () => {
   const { haptic } = useTelegram();
   const { activeTab, setActiveTab, openAddTransaction } = useUIStore();
   const { t } = useTranslation();
 
-  const leftNavItems: Array<{ id: ActiveTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
-    { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
-    { id: 'history', label: t('history'), icon: History },
-  ];
+  const renderItem = (item: NavItem) => {
+    const Icon = item.icon;
+    const isActive = activeTab === item.id;
+
+    return (
+      <button
+        key={item.id}
+        type="button"
+        onClick={() => {
+          if (isActive) return;
+          haptic.selection();
+          setActiveTab(item.id);
+        }}
+        aria-current={isActive ? 'page' : undefined}
+        className="relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl py-1.5"
+      >
+        {isActive && (
+          <motion.span
+            layoutId="nav-active-pill"
+            className="absolute inset-x-0.5 inset-y-0 rounded-2xl border border-accent/20 bg-accent-soft"
+            transition={{ type: 'spring', stiffness: 480, damping: 40 }}
+          />
+        )}
+        <Icon
+          size={19}
+          strokeWidth={isActive ? 2.4 : 1.9}
+          className={`relative z-10 transition-colors ${isActive ? 'text-accent' : 'text-faint'}`}
+        />
+        <span
+          className={`relative z-10 text-[9px] font-bold tracking-tight transition-colors ${
+            isActive ? 'text-accent' : 'text-faint'
+          }`}
+        >
+          {t(item.labelKey)}
+        </span>
+      </button>
+    );
+  };
 
   return (
-    <nav className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] inset-x-4 max-w-md mx-auto z-40 pointer-events-none">
-      <div className="pointer-events-auto">
-        {/* Floating Glass Dock */}
-        <div className="h-16 rounded-full px-4 flex items-center justify-between relative bg-white/85 dark:bg-zinc-950/80 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-2xl transition-colors duration-200">
-          {/* Left Tabs: Vault & History */}
-          <div className="flex-1 flex items-center justify-around pr-3">
-            {leftNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    haptic.selection();
-                    setActiveTab(item.id);
-                  }}
-                  className={`flex flex-col items-center justify-center py-1 rounded-2xl transition-all duration-200 active:scale-95 ${
-                    isActive
-                      ? 'text-indigo-600 dark:text-indigo-400'
-                      : 'text-slate-400 dark:text-zinc-400 hover:text-slate-600 dark:hover:text-zinc-200'
-                  }`}
-                >
-                  <div className="relative">
-                    <Icon size={21} className={isActive ? 'stroke-[2.4]' : 'stroke-[1.9]'} />
-                    {isActive && (
-                      <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-600 dark:bg-indigo-400 shadow-[0_0_8px_#818CF8]" />
-                    )}
-                  </div>
-                  <span
-                    className={`text-[10px] mt-1 tracking-tight ${
-                      isActive
-                        ? 'font-bold text-slate-900 dark:text-white'
-                        : 'font-medium text-slate-500 dark:text-zinc-400'
-                    }`}
-                  >
-                    {item.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+    <nav className="pointer-events-none fixed inset-x-4 bottom-[max(0.9rem,env(safe-area-inset-bottom))] z-40 mx-auto max-w-md">
+      <div className="pointer-events-auto relative flex items-end gap-1 rounded-[28px] border border-line bg-panel/90 px-2 py-2 shadow-float backdrop-blur-2xl">
+        {LEFT_ITEMS.map(renderItem)}
 
-          {/* Centered Elevated Add Button */}
-          <div className="flex-shrink-0 px-1 relative -top-3">
-            <button
-              type="button"
-              onClick={() => {
-                haptic.impact('medium');
-                openAddTransaction();
-              }}
-              aria-label={t('add')}
-              className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 text-white p-3 shadow-[0_0_16px_rgba(99,102,241,0.45)] hover:shadow-[0_0_22px_rgba(99,102,241,0.65)] border border-white/30 active:scale-90 transition-transform duration-150 flex items-center justify-center group"
-            >
-              <Plus size={22} className="stroke-[2.8] transition-transform duration-200 group-hover:rotate-90" />
-            </button>
-          </div>
-
-          {/* Right Tab: Analytics */}
-          <div className="flex-1 flex items-center justify-center pl-3">
-            {(() => {
-              const isActive = activeTab === 'analytics';
-              return (
-                <button
-                  type="button"
-                  onClick={() => {
-                    haptic.selection();
-                    setActiveTab('analytics');
-                  }}
-                  className={`flex flex-col items-center justify-center py-1 rounded-2xl transition-all duration-200 active:scale-95 ${
-                    isActive
-                      ? 'text-indigo-600 dark:text-indigo-400'
-                      : 'text-slate-400 dark:text-zinc-400 hover:text-slate-600 dark:hover:text-zinc-200'
-                  }`}
-                >
-                  <div className="relative">
-                    <PieChart size={21} className={isActive ? 'stroke-[2.4]' : 'stroke-[1.9]'} />
-                    {isActive && (
-                      <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-600 dark:bg-indigo-400 shadow-[0_0_8px_#818CF8]" />
-                    )}
-                  </div>
-                  <span
-                    className={`text-[10px] mt-1 tracking-tight ${
-                      isActive
-                        ? 'font-bold text-slate-900 dark:text-white'
-                        : 'font-medium text-slate-500 dark:text-zinc-400'
-                    }`}
-                  >
-                    {t('analytics')}
-                  </span>
-                </button>
-              );
-            })()}
-          </div>
+        <div className="relative flex w-14 shrink-0 justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              haptic.impact('medium');
+              openAddTransaction();
+            }}
+            aria-label={t('add')}
+            className="group absolute bottom-2 h-14 w-14 -translate-y-4 rounded-full border border-white/25 bg-gradient-to-tr from-accent via-accent-2 to-accent p-[2px] shadow-glow transition-transform active:scale-90"
+          >
+            <span className="absolute inset-0 -z-10 rounded-full bg-accent/40 blur-xl" aria-hidden="true" />
+            <span className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-tr from-accent to-accent-2">
+              <Plus
+                size={24}
+                strokeWidth={2.6}
+                className="text-white transition-transform duration-300 group-hover:rotate-90"
+              />
+            </span>
+          </button>
         </div>
+
+        {RIGHT_ITEMS.map(renderItem)}
       </div>
     </nav>
   );

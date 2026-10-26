@@ -1,250 +1,228 @@
-import React, { useState, useEffect } from 'react';
-import { X, ArrowLeft, CreditCard, Banknote } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Banknote,
+  CalendarDays,
+  ChevronDown,
+  CreditCard,
+  SlidersHorizontal,
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { useTransactionStore } from '../../stores/transactionStore';
+import { useTelegram } from '../../context/TelegramContext';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useSettingsStore, useTranslation } from '../../stores/settingsStore';
+import { useToastStore } from '../../stores/toastStore';
+import { useTransactionStore } from '../../stores/transactionStore';
 import { useUIStore } from '../../stores/uiStore';
-import { useTelegram } from '../../context/TelegramContext';
-import { TactileNumpad, evaluateSimpleExpression } from './TactileNumpad';
+import type { PaymentMethod, TransactionType } from '../../types/models';
 import { CategoryPicker } from './CategoryPicker';
 import { HashtagSelector } from './HashtagSelector';
-import { CategoryManagementScreen } from './CategoryManagementScreen';
-import { GlassButton } from '../glass/GlassButton';
-import type { TransactionType, PaymentMethod } from '../../types/models';
+import { TactileNumpad, evaluateSimpleExpression } from './TactileNumpad';
+import { Segmented } from '../ui/Segmented';
+import { Sheet } from '../ui/Sheet';
+import { Chip } from '../ui/Chip';
 
 export const AddTransactionScreen: React.FC = () => {
   const { addTransaction, updateTransaction } = useTransactionStore();
   const { categories, getCategoriesByType } = useCategoryStore();
-  const { currencyConfig } = useSettingsStore();
+  const { currencyConfig, formatAmount } = useSettingsStore();
   const { t } = useTranslation();
   const {
+    isAddTransactionOpen,
     closeAddTransaction,
     preselectedTransactionType,
     editingTransaction,
-    isManageCategoriesOpen,
+    prefillTemplate,
     openManageCategories,
-    closeManageCategories,
   } = useUIStore();
+  const showToast = useToastStore((s) => s.show);
   const { haptic, backButton } = useTelegram();
 
-  const [type, setType] = useState<TransactionType>(
-    editingTransaction?.type || preselectedTransactionType || 'expense'
-  );
-  const [rawAmount, setRawAmount] = useState<string>(
-    editingTransaction ? editingTransaction.amount.toString() : '0'
-  );
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    editingTransaction?.category_id || null
-  );
-  const [note, setNote] = useState<string>(editingTransaction?.note || '');
-  const [hashtags, setHashtags] = useState<string[]>(editingTransaction?.hashtags || []);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    editingTransaction?.payment_method || 'Card'
-  );
+  const [type, setType] = useState<TransactionType>('expense');
+  const [rawAmount, setRawAmount] = useState('0');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  const [hashtags, setHashtags] = useState<string[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Card');
   const [dateOption, setDateOption] = useState<'today' | 'yesterday' | 'custom'>('today');
-  const [customDate, setCustomDate] = useState<string>(
-    editingTransaction ? new Date(editingTransaction.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
-  );
+  const [customDate, setCustomDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [showMore, setShowMore] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Set default category if none selected or type changed
+  useEffect(() => {
+    if (!isAddTransactionOpen) return;
+
+    const source = editingTransaction ?? prefillTemplate;
+    setType(editingTransaction?.type ?? prefillTemplate?.type ?? preselectedTransactionType);
+    setRawAmount(source ? String(source.amount) : '0');
+    setSelectedCategoryId(source?.category_id ?? null);
+    setNote(source?.note ?? '');
+    setHashtags(source?.hashtags ?? []);
+    setPaymentMethod(source?.payment_method ?? 'Card');
+    setShowMore(false);
+    setCustomDate(
+      editingTransaction
+        ? new Date(editingTransaction.date).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+    );
+    setDateOption(editingTransaction ? 'custom' : 'today');
+  }, [isAddTransactionOpen, editingTransaction, prefillTemplate, preselectedTransactionType]);
+
   useEffect(() => {
     const validCats = getCategoriesByType(type);
     if (!selectedCategoryId || !validCats.some((c) => c.id === selectedCategoryId)) {
-      if (validCats.length > 0) {
-        setSelectedCategoryId(validCats[0].id);
-      }
+      setSelectedCategoryId(validCats[0]?.id ?? null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, categories]);
 
-  // Telegram native BackButton integration
   useEffect(() => {
+    if (!isAddTransactionOpen) return;
     backButton.show();
-    const handleBack = () => {
-      closeAddTransaction();
-    };
+    const handleBack = () => closeAddTransaction();
     backButton.onClick(handleBack);
     return () => {
       backButton.offClick(handleBack);
       backButton.hide();
     };
-  }, []);
+  }, [isAddTransactionOpen, backButton, closeAddTransaction]);
 
-  const handleTypeChange = (newType: TransactionType) => {
-    haptic.selection();
-    setType(newType);
-  };
-
-  const calculatedAmount = evaluateSimpleExpression(rawAmount);
+  const amount = evaluateSimpleExpression(rawAmount);
+  const isIncome = type === 'income';
 
   const handleSubmit = async () => {
-    if (calculatedAmount <= 0) {
+    if (amount <= 0) {
       haptic.notification('error');
+      showToast(t('enter_amount'), 'error');
       return;
     }
 
+    const finalDate = new Date();
+    if (dateOption === 'yesterday') finalDate.setDate(finalDate.getDate() - 1);
+    else if (dateOption === 'custom') finalDate.setTime(new Date(`${customDate}T12:00:00`).getTime());
+
     setIsSubmitting(true);
     haptic.notification('success');
-
-    // Date computation
-    let finalDate = new Date();
-    if (dateOption === 'yesterday') {
-      finalDate.setDate(finalDate.getDate() - 1);
-    } else if (dateOption === 'custom') {
-      finalDate = new Date(customDate);
-    }
 
     try {
       if (editingTransaction) {
         await updateTransaction(editingTransaction.id, {
           type,
-          amount: calculatedAmount,
+          amount,
           category_id: selectedCategoryId,
           note: note.trim() || null,
           hashtags,
           date: finalDate.toISOString(),
           payment_method: paymentMethod,
         });
+        showToast(t('entry_updated'), 'success');
       } else {
         await addTransaction({
           type,
-          amount: calculatedAmount,
+          amount,
           category_id: selectedCategoryId,
           note: note.trim() || null,
           hashtags,
           date: finalDate.toISOString(),
           payment_method: paymentMethod,
         });
+        showToast(isIncome ? t('income_added') : t('entry_saved'), 'success');
 
-        // Confetti celebration if logging income!
-        if (type === 'income') {
+        if (isIncome) {
           confetti({
-            particleCount: 80,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#10B981', '#34D399', '#06B6D4', '#6366F1'],
+            particleCount: 90,
+            spread: 72,
+            origin: { y: 0.62 },
+            colors: ['#0F9F7A', '#5EEAD4', '#6354E8', '#B9ADFF'],
+            disableForReducedMotion: true,
           });
         }
       }
-
       closeAddTransaction();
     } catch (err) {
       console.error('Save failed:', err);
       haptic.notification('error');
+      showToast(t('no_results'), 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#070A12] flex flex-col safe-top safe-bottom overflow-y-auto no-scrollbar animate-in slide-in-from-bottom-6 duration-200">
-      {/* Top Bar */}
-      <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between sticky top-0 bg-[#070A12]/90 backdrop-blur-xl z-20">
+    <Sheet
+      open={isAddTransactionOpen}
+      onClose={closeAddTransaction}
+      title={editingTransaction ? t('edit_transaction_title') : t('new_transaction')}
+      subtitle={`${currencyConfig.code} · ${currencyConfig.name}`}
+      footer={
         <button
           type="button"
-          onClick={() => {
-            haptic.impact('light');
-            closeAddTransaction();
-          }}
-          className="p-2 rounded-xl bg-white/[0.06] text-slate-300 active:scale-95 transition-all"
-        >
-          <ArrowLeft size={18} />
-        </button>
-
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-          {editingTransaction ? t('edit_transaction_title') : type === 'income' ? t('record_income') : t('record_expense')}
-        </h2>
-
-        <button
-          type="button"
-          onClick={() => {
-            haptic.impact('light');
-            closeAddTransaction();
-          }}
-          className="p-2 rounded-xl bg-white/[0.06] text-slate-300 active:scale-95 transition-all"
-        >
-          <X size={18} />
-        </button>
-      </div>
-
-      <div className="flex-1 px-4 py-3 space-y-4 max-w-md mx-auto w-full pb-24">
-        {/* Type Toggle: Expense vs Income */}
-        <div className="p-1 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex relative">
-          <button
-            type="button"
-            onClick={() => handleTypeChange('expense')}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              type === 'expense'
-                ? 'bg-rose-500/25 text-rose-300 border border-rose-500/50 shadow-lg shadow-rose-500/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>{t('expense')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTypeChange('income')}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              type === 'income'
-                ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 shadow-lg shadow-emerald-500/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>{t('income')}</span>
-          </button>
-        </div>
-
-        {/* Large Amount Display */}
-        <div
-          className={`glass-card p-4 rounded-3xl text-center border transition-all ${
-            type === 'income' ? 'border-emerald-500/30 shadow-income-glow' : 'border-rose-500/30 shadow-expense-glow'
+          onClick={handleSubmit}
+          disabled={amount <= 0 || isSubmitting}
+          className={`pressable w-full rounded-2xl py-3.5 font-display text-[13px] font-bold text-white shadow-glow disabled:opacity-40 ${
+            isIncome
+              ? 'bg-gradient-to-r from-mint to-emerald-500'
+              : 'bg-gradient-to-r from-accent to-accent-2'
           }`}
         >
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-            {t('amount')} ({currencyConfig.code})
-          </div>
-          <div className="flex items-center justify-center space-x-1">
+          {isSubmitting
+            ? t('saving')
+            : `${editingTransaction ? t('update_transaction') : isIncome ? t('save_income') : t('save_expense')} · ${formatAmount(amount)}`}
+        </button>
+      }
+    >
+      <div className="space-y-4 pb-1">
+        <Segmented
+          options={[
+            { value: 'expense', label: t('expense'), icon: <ArrowUpRight size={13} /> },
+            { value: 'income', label: t('income'), icon: <ArrowDownLeft size={13} /> },
+          ]}
+          value={type}
+          onChange={(next) => {
+            haptic.selection();
+            setType(next);
+          }}
+          accent={isIncome ? 'var(--mint)' : 'var(--coral)'}
+          ariaLabel={t('filter_type')}
+        />
+
+        <div
+          className={`relative overflow-hidden rounded-3xl border p-4 text-center ${
+            isIncome ? 'border-mint/25 bg-mint-soft' : 'border-coral/20 bg-coral-soft'
+          }`}
+        >
+          <p className="eyebrow">{t('amount')}</p>
+          <div className="mt-1 flex items-baseline justify-center gap-1.5">
             <span
-              className={`text-2xl font-bold ${
-                type === 'income' ? 'text-emerald-400' : 'text-rose-400'
-              }`}
+              className={`font-display text-lg font-bold ${isIncome ? 'text-mint' : 'text-coral'}`}
             >
-              {type === 'income' ? '+' : '-'} {currencyConfig.symbol}
+              {isIncome ? '+' : '−'} {currencyConfig.symbol}
             </span>
-            <span
-              className={`text-4xl font-extrabold tracking-tight tabular-nums ${
-                type === 'income' ? 'text-emerald-300' : 'text-rose-300'
-              }`}
-            >
+            <span className="font-mono text-[34px] font-bold leading-none tracking-tight text-ink">
               {rawAmount}
             </span>
           </div>
-
-          {/* Expression preview if user typed e.g. 20+15 */}
           {(rawAmount.includes('+') || rawAmount.includes('-')) && (
-            <div className="mt-1 text-xs font-mono text-indigo-300">
-              = {currencyConfig.symbol}{calculatedAmount.toFixed(2)}
-            </div>
+            <p className="mt-1.5 font-mono text-[10px] font-semibold text-muted">
+              = {formatAmount(amount)}
+            </p>
           )}
         </div>
 
-        {/* Tactile Numpad */}
-        <TactileNumpad
-          value={rawAmount}
-          onChange={setRawAmount}
-          onSubmit={handleSubmit}
-        />
+        <TactileNumpad value={rawAmount} onChange={setRawAmount} onSubmit={handleSubmit} />
 
-        {/* Category Picker (Filtered by Type) */}
         <CategoryPicker
           selectedCategoryId={selectedCategoryId}
           onSelectCategory={setSelectedCategoryId}
           type={type}
-          onOpenManageCategories={openManageCategories}
+          onOpenManageCategories={() => {
+            haptic.impact('light');
+            openManageCategories();
+          }}
         />
 
-        {/* Hashtags & Notes */}
         <HashtagSelector
           note={note}
           onChangeNote={setNote}
@@ -252,124 +230,112 @@ export const AddTransactionScreen: React.FC = () => {
           onChangeTags={setHashtags}
         />
 
-        {/* Payment Method & Date in 2 columns */}
-        <div className="grid grid-cols-2 gap-2.5">
-          {/* Payment Method: Card vs Cash */}
-          <div className="glass-card p-3 rounded-2xl">
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              {t('payment_method')}
-            </div>
-            <div className="flex gap-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  haptic.selection();
-                  setPaymentMethod('Card');
-                }}
-                className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 border transition-all ${
-                  paymentMethod === 'Card'
-                    ? 'bg-indigo-600/30 border-indigo-500 text-white'
-                    : 'bg-white/[0.04] border-white/[0.06] text-slate-400'
-                }`}
-              >
-                <CreditCard size={13} />
-                <span>{t('card')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  haptic.selection();
-                  setPaymentMethod('Cash');
-                }}
-                className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 border transition-all ${
-                  paymentMethod === 'Cash'
-                    ? 'bg-indigo-600/30 border-indigo-500 text-white'
-                    : 'bg-white/[0.04] border-white/[0.06] text-slate-400'
-                }`}
-              >
-                <Banknote size={13} />
-                <span>{t('cash')}</span>
-              </button>
-            </div>
-          </div>
+        <button
+          type="button"
+          onClick={() => {
+            haptic.selection();
+            setShowMore((v) => !v);
+          }}
+          className="flex w-full items-center justify-between rounded-2xl border border-line bg-panel-inset px-3.5 py-2.5 text-[11px] font-bold text-muted"
+        >
+          <span className="flex items-center gap-1.5">
+            <SlidersHorizontal size={13} />
+            {showMore ? t('less_options') : t('more_options')}
+          </span>
+          <ChevronDown
+            size={14}
+            className={`transition-transform duration-200 ${showMore ? 'rotate-180' : ''}`}
+          />
+        </button>
 
-          {/* Date Selector */}
-          <div className="glass-card p-3 rounded-2xl">
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              {t('date_filter')}
-            </div>
-            <div className="flex gap-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  haptic.selection();
-                  setDateOption('today');
-                }}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                  dateOption === 'today'
-                    ? 'bg-indigo-600/30 border-indigo-500 text-white'
-                    : 'bg-white/[0.04] border-white/[0.06] text-slate-400'
-                }`}
-              >
-                {t('today')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  haptic.selection();
-                  setDateOption('yesterday');
-                }}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                  dateOption === 'yesterday'
-                    ? 'bg-indigo-600/30 border-indigo-500 text-white'
-                    : 'bg-white/[0.04] border-white/[0.06] text-slate-400'
-                }`}
-              >
-                {t('yesterday')}
-              </button>
-              <input
-                type="date"
-                value={customDate}
-                onChange={(e) => {
-                  setDateOption('custom');
-                  setCustomDate(e.target.value);
-                }}
-                className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-[10px] p-1 flex items-center justify-center"
-                title="Pick custom date"
-              />
-            </div>
-          </div>
-        </div>
+        <AnimatePresence initial={false}>
+          {showMore && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-3">
+                <div>
+                  <p className="eyebrow mb-2">{t('payment_method')}</p>
+                  <div className="flex gap-2">
+                    <Chip
+                      active={paymentMethod === 'Card'}
+                      accent="var(--accent)"
+                      icon={<CreditCard size={13} />}
+                      onClick={() => {
+                        haptic.selection();
+                        setPaymentMethod('Card');
+                      }}
+                      className="flex-1 justify-center py-2"
+                    >
+                      {t('card')}
+                    </Chip>
+                    <Chip
+                      active={paymentMethod === 'Cash'}
+                      accent="var(--accent)"
+                      icon={<Banknote size={13} />}
+                      onClick={() => {
+                        haptic.selection();
+                        setPaymentMethod('Cash');
+                      }}
+                      className="flex-1 justify-center py-2"
+                    >
+                      {t('cash')}
+                    </Chip>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="eyebrow mb-2">{t('date_filter')}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Chip
+                      active={dateOption === 'today'}
+                      accent="var(--accent)"
+                      onClick={() => {
+                        haptic.selection();
+                        setDateOption('today');
+                      }}
+                    >
+                      {t('today')}
+                    </Chip>
+                    <Chip
+                      active={dateOption === 'yesterday'}
+                      accent="var(--accent)"
+                      onClick={() => {
+                        haptic.selection();
+                        setDateOption('yesterday');
+                      }}
+                    >
+                      {t('yesterday')}
+                    </Chip>
+                    <label
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                        dateOption === 'custom'
+                          ? 'border-transparent bg-accent text-white'
+                          : 'border-line bg-panel-inset text-muted'
+                      }`}
+                    >
+                      <CalendarDays size={12} />
+                      <input
+                        type="date"
+                        value={customDate}
+                        onChange={(e) => {
+                          setCustomDate(e.target.value);
+                          setDateOption('custom');
+                        }}
+                        className="w-[6.9rem] bg-transparent text-[10px] font-bold text-inherit outline-none"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-
-      {/* Sticky Bottom Save Button */}
-      <div className="sticky bottom-0 inset-x-0 p-4 bg-[#070A12]/95 backdrop-blur-xl border-t border-white/[0.08] z-30 safe-bottom">
-        <div className="max-w-md mx-auto">
-          <GlassButton
-            variant={type === 'income' ? 'income' : 'expense'}
-            size="lg"
-            onClick={handleSubmit}
-            disabled={calculatedAmount <= 0 || isSubmitting}
-            className="w-full shadow-2xl"
-          >
-            {isSubmitting
-              ? t('saving')
-              : editingTransaction
-              ? t('update_transaction')
-              : type === 'income'
-              ? `${t('save_income')} (+${currencyConfig.symbol}${calculatedAmount.toFixed(2)})`
-              : `${t('save_expense')} (-${currencyConfig.symbol}${calculatedAmount.toFixed(2)})`}
-          </GlassButton>
-        </div>
-      </div>
-
-      {/* Category Management Sub-Screen */}
-      {isManageCategoriesOpen && (
-        <CategoryManagementScreen
-          defaultType={type}
-          onClose={closeManageCategories}
-        />
-      )}
-    </div>
+    </Sheet>
   );
 };

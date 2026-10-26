@@ -1,13 +1,23 @@
 import React, { useState } from 'react';
-import { X, Edit3, Trash2, Calendar, CreditCard, Banknote, Tag } from 'lucide-react';
+import {
+  Banknote,
+  CalendarDays,
+  CreditCard,
+  Edit3,
+  Tag,
+  Trash2,
+} from 'lucide-react';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useSettingsStore, useTranslation } from '../../stores/settingsStore';
+import { useToastStore } from '../../stores/toastStore';
 import { getLocalizedCategoryName } from '../../utils/translations';
 import { useUIStore } from '../../stores/uiStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { CategoryIcon } from '../glass/CategoryIcon';
-import { GlassBadge } from '../glass/GlassBadge';
+import { IconTile } from '../ui/IconTile';
+import { Sheet } from '../ui/Sheet';
+import { Surface } from '../ui/Surface';
 
 export const TransactionDetailSheet: React.FC = () => {
   const { selectedTransactionForDetail, setSelectedTransaction, openAddTransaction } = useUIStore();
@@ -16,34 +26,36 @@ export const TransactionDetailSheet: React.FC = () => {
   const { formatAmount } = useSettingsStore();
   const { t, language } = useTranslation();
   const { haptic, backButton } = useTelegram();
+  const showToast = useToastStore((s) => s.show);
 
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   React.useEffect(() => {
-    if (selectedTransactionForDetail) {
-      backButton.show();
-      const handleBack = () => setSelectedTransaction(null);
-      backButton.onClick(handleBack);
-      return () => {
-        backButton.offClick(handleBack);
-        backButton.hide();
-      };
-    }
+    setIsConfirmingDelete(false);
+  }, [selectedTransactionForDetail?.id]);
+
+  React.useEffect(() => {
+    if (!selectedTransactionForDetail) return;
+    backButton.show();
+    const handleBack = () => setSelectedTransaction(null);
+    backButton.onClick(handleBack);
+    return () => {
+      backButton.offClick(handleBack);
+      backButton.hide();
+    };
   }, [selectedTransactionForDetail, backButton, setSelectedTransaction]);
 
-  if (!selectedTransactionForDetail) return null;
-
   const tx = selectedTransactionForDetail;
-  const isIncome = tx.type === 'income';
-  const cat = tx.category || getCategoryById(tx.category_id);
 
   const handleEdit = () => {
+    if (!tx) return;
     haptic.impact('medium');
     setSelectedTransaction(null);
     openAddTransaction(tx.type, tx);
   };
 
   const handleDelete = async () => {
+    if (!tx) return;
     if (!isConfirmingDelete) {
       haptic.notification('warning');
       setIsConfirmingDelete(true);
@@ -53,153 +65,191 @@ export const TransactionDetailSheet: React.FC = () => {
     haptic.impact('heavy');
     await deleteTransaction(tx.id);
     setSelectedTransaction(null);
+    showToast(t('transaction_deleted'), 'success');
   };
 
-  const formattedDate = new Date(tx.date).toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-  const formattedTime = new Date(tx.date).toLocaleTimeString(language === 'ru' ? 'ru-RU' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  const isIncome = tx?.type === 'income';
+  const cat = tx ? tx.category || getCategoryById(tx.category_id) : undefined;
+  const tone = isIncome ? 'var(--mint)' : 'var(--coral)';
+
+  const locale = language === 'ru' ? 'ru-RU' : 'en-US';
+  const fullDate = tx
+    ? new Date(tx.date).toLocaleDateString(locale, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '';
+  const time = tx
+    ? new Date(tx.date).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-[#0D1322] border border-white/[0.12] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] safe-bottom animate-in slide-in-from-bottom-8 duration-200">
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            {t('transaction_details')}
-          </span>
-          <button
-            type="button"
-            onClick={() => setSelectedTransaction(null)}
-            className="p-1.5 rounded-full text-slate-400 hover:text-white bg-white/[0.06] active:scale-95 transition-all"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-5 space-y-4 overflow-y-auto no-scrollbar">
-          {/* Amount Hero in Modal */}
-          <div
-            className={`glass-card p-5 rounded-3xl text-center border ${
-              isIncome ? 'border-emerald-500/30 bg-emerald-950/20' : 'border-rose-500/30 bg-rose-950/20'
-            }`}
-          >
-            <div className="inline-block mb-1">
-              <GlassBadge variant={isIncome ? 'income' : 'expense'}>
-                {isIncome ? t('income') : t('expense')}
-              </GlassBadge>
-            </div>
-            <div
-              className={`text-3xl font-extrabold tracking-tight tabular-nums ${
-                isIncome ? 'text-emerald-300' : 'text-rose-300'
-              }`}
-            >
-              {isIncome ? '+' : '-'}
-              {formatAmount(tx.amount)}
-            </div>
-          </div>
-
-          {/* Details list */}
-          <div className="glass-card rounded-2.5xl p-4 space-y-3.5 border border-white/[0.08]">
-            {/* Category */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-medium">{t('categories')}</span>
-              <div className="flex items-center space-x-2">
-                <div
-                  className="w-6 h-6 rounded-lg flex items-center justify-center"
-                  style={{
-                    backgroundColor: `${cat?.color || '#818CF8'}25`,
-                    color: cat?.color || '#818CF8',
-                  }}
-                >
-                  <CategoryIcon name={cat?.icon || 'HelpCircle'} size={14} color={cat?.color} />
-                </div>
-                <span className="text-xs font-bold text-white">
-                  {getLocalizedCategoryName(cat?.name || 'Other', language)}
-                </span>
-              </div>
-            </div>
-
-            {/* Date & Time */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
-                <Calendar size={13} />
-                {t('date_time')}
-              </span>
-              <span className="text-xs font-semibold text-slate-200">
-                {formattedDate} {language === 'ru' ? 'в' : 'at'} {formattedTime}
-              </span>
-            </div>
-
-            {/* Payment Method */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
-                {tx.payment_method === 'Cash' ? <Banknote size={13} /> : <CreditCard size={13} />}
-                {t('payment_method')}
-              </span>
-              <span className="text-xs font-semibold text-slate-200">
-                {tx.payment_method === 'Cash' ? t('cash') : t('card')}
-              </span>
-            </div>
-
-            {/* Note */}
-            {tx.note && (
-              <div className="pt-2 border-t border-white/[0.06]">
-                <span className="text-xs text-slate-400 font-medium block mb-1">{t('note_label')}</span>
-                <p className="text-xs text-slate-200 bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                  {tx.note}
-                </p>
-              </div>
-            )}
-
-            {/* Hashtags */}
-            {tx.hashtags && tx.hashtags.length > 0 && (
-              <div className="pt-2 border-t border-white/[0.06]">
-                <span className="text-xs text-slate-400 font-medium block mb-1.5 flex items-center gap-1">
-                  <Tag size={12} className="text-indigo-400" />
-                  {t('tags')}
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {tx.hashtags.map((tag) => (
-                    <GlassBadge key={tag} variant="brand" size="xs">
-                      #{tag}
-                    </GlassBadge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Action buttons: Edit & Delete */}
-          <div className="pt-2 flex items-center space-x-3">
+    <Sheet
+      open={Boolean(tx)}
+      onClose={() => setSelectedTransaction(null)}
+      title={t('transaction_details')}
+      subtitle={tx ? `${fullDate} · ${time}` : undefined}
+      footer={
+        tx ? (
+          <div className="flex items-center gap-2.5">
             <button
               type="button"
               onClick={handleDelete}
-              className={`flex-1 py-3 px-4 rounded-2xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
+              className={`pressable flex h-12 flex-1 items-center justify-center gap-1.5 rounded-2xl text-xs font-bold transition-colors ${
                 isConfirmingDelete
-                  ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
-                  : 'bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25'
-              } active:scale-95`}
+                  ? 'text-white'
+                  : 'bg-coral-soft text-coral'
+              }`}
+              style={
+                isConfirmingDelete
+                  ? { backgroundColor: 'var(--coral)', boxShadow: '0 14px 32px -14px var(--coral)' }
+                  : { border: '1px solid var(--coral)' }
+              }
             >
               <Trash2 size={15} />
-              <span>{isConfirmingDelete ? t('confirm_delete_q') : t('delete')}</span>
+              {isConfirmingDelete ? t('confirm_delete_q') : t('delete')}
             </button>
-
             <button
               type="button"
               onClick={handleEdit}
-              className="flex-1 py-3 px-4 rounded-2xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/40 active:scale-95 transition-all flex items-center justify-center space-x-1.5"
+              className="pressable flex h-12 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-br from-accent to-accent-2 text-xs font-bold text-white shadow-glow"
             >
               <Edit3 size={15} />
-              <span>{t('edit')}</span>
+              {t('edit')}
             </button>
           </div>
+        ) : undefined
+      }
+    >
+      {tx && (
+        <div className="space-y-4 pb-2">
+          {/* Amount hero */}
+          <div
+            className="relative overflow-hidden rounded-[26px] border p-5"
+            style={{
+              borderColor: tone,
+              background: isIncome ? 'var(--mint-soft)' : 'var(--coral-soft)',
+            }}
+          >
+            <div
+              className="pointer-events-none absolute -right-6 -top-8 h-28 w-28 rounded-full opacity-30 blur-2xl"
+              style={{ backgroundColor: tone }}
+            />
+            <div className="relative flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <span className="eyebrow" style={{ color: tone }}>
+                  {isIncome ? t('income') : t('expense')}
+                </span>
+                <div
+                  className="mt-1 truncate font-num text-[32px] font-semibold leading-none"
+                  style={{ color: tone }}
+                >
+                  {isIncome ? '+' : '−'}
+                  {formatAmount(tx.amount)}
+                </div>
+              </div>
+              <div
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: `${cat?.color || '#818CF8'}22` }}
+              >
+                <CategoryIcon
+                  name={cat?.icon || (isIncome ? 'PlusCircle' : 'MoreHorizontal')}
+                  size={22}
+                  color={cat?.color || '#818CF8'}
+                />
+              </div>
+            </div>
+            <div className="relative mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-muted">
+              <span className="truncate">
+                {getLocalizedCategoryName(
+                  cat?.name || (isIncome ? 'Other Income' : 'Other Expense'),
+                  language,
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* Details */}
+          <Surface tone="inset" className="divide-y divide-line p-0">
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <span className="flex items-center gap-2 text-[11px] font-medium text-muted">
+                <IconTile
+                  icon={cat?.icon || 'HelpCircle'}
+                  color={cat?.color}
+                  size={26}
+                  iconSize={13}
+                />
+                {t('categories')}
+              </span>
+              <span className="truncate text-[11px] font-bold text-ink">
+                {getLocalizedCategoryName(
+                  cat?.name || (isIncome ? 'Other Income' : 'Other Expense'),
+                  language,
+                )}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <span className="flex items-center gap-2 text-[11px] font-medium text-muted">
+                <CalendarDays size={14} className="text-faint" />
+                {t('date_time')}
+              </span>
+              <span className="text-right text-[11px] font-bold text-ink">
+                {new Date(tx.date).toLocaleDateString(locale, {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+                <span className="ml-1.5 font-medium text-muted">{time}</span>
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <span className="flex items-center gap-2 text-[11px] font-medium text-muted">
+                {tx.payment_method === 'Cash' ? (
+                  <Banknote size={14} className="text-faint" />
+                ) : (
+                  <CreditCard size={14} className="text-faint" />
+                )}
+                {t('payment_method')}
+              </span>
+              <span className="text-[11px] font-bold text-ink">
+                {tx.payment_method === 'Cash' ? t('cash') : t('card')}
+              </span>
+            </div>
+          </Surface>
+
+          {tx.note && (
+            <div className="space-y-1.5">
+              <div className="eyebrow">{t('note_label')}</div>
+              <p className="rounded-2xl border border-line bg-panel-inset px-3.5 py-3 text-[11px] leading-relaxed text-ink-soft">
+                {tx.note}
+              </p>
+            </div>
+          )}
+
+          {tx.hashtags && tx.hashtags.length > 0 && (
+            <div className="space-y-2">
+              <div className="eyebrow flex items-center gap-1.5">
+                <Tag size={11} />
+                {t('tags')}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {tx.hashtags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-line bg-accent-soft px-2.5 py-1 text-[10px] font-bold text-accent"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-    </div>
+      )}
+    </Sheet>
   );
 };

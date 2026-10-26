@@ -92,7 +92,41 @@ export interface CurrencyConfig {
   flag?: string;
 }
 
-export type ActiveTab = 'dashboard' | 'history' | 'analytics' | 'settings';
+export type ActiveTab = 'dashboard' | 'history' | 'plan' | 'analytics' | 'settings';
+
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  target: number;
+  saved: number;
+  deadline?: string;
+  created_at: string;
+}
+
+export interface RecurringBill {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  amount: number;
+  category_id?: string | null;
+  day: number;
+  payment_method: PaymentMethod;
+  last_paid?: string;
+  created_at: string;
+}
+
+export interface QuickTemplate {
+  id: string;
+  type: TransactionType;
+  amount: number;
+  category_id?: string | null;
+  note: string;
+  hashtags: string[];
+  payment_method: PaymentMethod;
+}
 
 export interface FilterState {
   type: 'all' | 'expense' | 'income';

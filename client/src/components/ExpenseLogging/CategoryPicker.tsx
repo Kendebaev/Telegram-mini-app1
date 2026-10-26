@@ -1,5 +1,6 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Settings2 } from 'lucide-react';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { useTranslation } from '../../stores/settingsStore';
 import { getLocalizedCategoryName } from '../../utils/translations';
@@ -27,79 +28,70 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
   const categories = getCategoriesByType(type);
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-2.5 px-1">
-        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          {t('categories')}
-        </label>
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <p className="eyebrow">{t('categories')}</p>
         <button
           type="button"
           onClick={() => {
             haptic.impact('light');
             onOpenManageCategories();
           }}
-          className="text-xs font-medium text-indigo-400 hover:text-indigo-300 active:scale-95 transition-all flex items-center gap-1"
+          className="flex items-center gap-1 text-[10px] font-bold text-accent"
         >
-          <Plus size={13} />
-          <span>{t('manage')}</span>
+          <Settings2 size={12} />
+          {t('manage')}
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto no-scrollbar p-1">
+      <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 no-scrollbar">
         {categories.map((cat) => {
           const isSelected = selectedCategoryId === cat.id;
-
           return (
-            <button
+            <motion.button
               key={cat.id}
               type="button"
+              whileTap={{ scale: 0.94 }}
               onClick={() => {
                 haptic.selection();
                 onSelectCategory(cat.id);
               }}
-              className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border transition-all duration-150 active:scale-95 ${
+              className={`flex w-[4.4rem] shrink-0 flex-col items-center gap-1 rounded-2xl border px-1.5 py-2 transition-colors ${
                 isSelected
-                  ? 'bg-white/[0.16] border-white/40 shadow-lg scale-[1.02]'
-                  : 'bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.08]'
+                  ? 'border-transparent bg-panel-solid shadow-panel'
+                  : 'border-line bg-panel-inset'
               }`}
-              style={{
-                borderColor: isSelected ? cat.color : undefined,
-                boxShadow: isSelected ? `0 0 16px -2px ${cat.color}60` : undefined,
-              }}
+              style={isSelected ? { boxShadow: `0 0 0 1.5px ${cat.color}, 0 10px 24px -16px ${cat.color}` } : undefined}
             >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5 transition-transform duration-150"
-                style={{
-                  backgroundColor: `${cat.color}25`,
-                  color: cat.color,
-                }}
-              >
-                <CategoryIcon name={cat.icon} size={20} color={cat.color} />
-              </div>
               <span
-                className={`text-[11px] font-medium text-center truncate max-w-full ${
-                  isSelected ? 'text-white font-semibold' : 'text-slate-300'
+                className="flex h-9 w-9 items-center justify-center rounded-xl"
+                style={{ backgroundColor: `${cat.color}22`, color: cat.color }}
+              >
+                <CategoryIcon name={cat.icon} size={18} color={cat.color} />
+              </span>
+              <span
+                className={`w-full truncate text-center text-[9px] leading-tight ${
+                  isSelected ? 'font-bold text-ink' : 'font-medium text-muted'
                 }`}
               >
                 {getLocalizedCategoryName(cat.name, language)}
               </span>
-            </button>
+            </motion.button>
           );
         })}
 
-        {/* Add Category Quick Button */}
         <button
           type="button"
           onClick={() => {
             haptic.impact('light');
             onOpenManageCategories();
           }}
-          className="flex flex-col items-center justify-center p-2.5 rounded-2xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] text-slate-400 active:scale-95 transition-all"
+          className="flex w-[4.4rem] shrink-0 flex-col items-center gap-1 rounded-2xl border border-dashed border-line-strong bg-transparent px-1.5 py-2 text-faint"
         >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5 bg-white/[0.05] text-slate-300">
-            <Plus size={18} />
-          </div>
-          <span className="text-[11px] font-medium text-slate-400">{t('new_category')}</span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-dashed border-line-strong">
+            <Settings2 size={16} />
+          </span>
+          <span className="text-[9px] font-medium leading-tight">{t('new_category')}</span>
         </button>
       </div>
     </div>

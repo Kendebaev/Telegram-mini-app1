@@ -384,13 +384,17 @@ export const useTransactionStore = create<TransactionState>((set, get) => {
         });
       }
 
-      // Filter by custom date range
+      // Filter by custom date range (date-only values are treated as local, end day inclusive)
       if (filters.startDate) {
-        const start = new Date(filters.startDate);
+        const start = new Date(
+          filters.startDate.length === 10 ? `${filters.startDate}T00:00:00` : filters.startDate,
+        );
         list = list.filter((t) => new Date(t.date) >= start);
       }
       if (filters.endDate) {
-        const end = new Date(filters.endDate);
+        const end = new Date(
+          filters.endDate.length === 10 ? `${filters.endDate}T23:59:59.999` : filters.endDate,
+        );
         list = list.filter((t) => new Date(t.date) <= end);
       }
 
