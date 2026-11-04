@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { apiRequest } from '../utils/api';
 import type { Transaction, FilterState, PaymentMethod, TransactionType } from '../types/models';
 import { useSettingsStore } from './settingsStore';
+import { useCategoryStore } from './categoryStore';
 
 const LOCAL_STORAGE_TRANSACTIONS = 'vault_transactions';
 const LOCAL_STORAGE_HASHTAGS = 'vault_hashtags';
@@ -351,7 +352,10 @@ export const useTransactionStore = create<TransactionState>((set, get) => {
 
       // Filter by category
       if (filters.categoryId !== 'all') {
-        list = list.filter((t) => t.category_id === filters.categoryId);
+        const knownIds = new Set(useCategoryStore.getState().categories.map(c => c.id));
+        list = list.filter((t) => filters.categoryId === 'uncategorized'
+          ? !t.category_id || !knownIds.has(t.category_id)
+          : t.category_id === filters.categoryId);
       }
 
       // Filter by payment method

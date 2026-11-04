@@ -63,8 +63,9 @@ export function Segmented<T extends string>({
             )}
             <span
               className={`relative z-10 flex items-center justify-center gap-1.5 whitespace-nowrap ${
-                active ? 'text-white' : 'text-muted'
+                active ? '' : 'text-muted'
               }`}
+              style={active ? { color: 'var(--on-accent)' } : undefined}
             >
               {option.icon}
               {option.label}

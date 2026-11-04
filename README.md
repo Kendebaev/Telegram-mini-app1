@@ -4,6 +4,29 @@ A high-performance, mobile-first Telegram Mini App for personal expense tracking
 
 ---
 
+## November 2026 interface update
+
+Vault now uses a quieter forest/graphite palette with mint accents, a matching light theme, larger financial figures, readable Russian/English typography, and an accessible bottom navigation bar.
+
+- Interactive income/expense chart: 7 days, selected month, or 6 months; previous-period comparison; exact values in a table. Unfinished months use matching elapsed days.
+- Tap a category, calendar day, or spending tag to open the matching transactions. The dashboard and analytics share the selected month.
+- Persistent balance visibility preference, clearer budget progress, and correct overspending labels. A suggested budget requires saving before it becomes active.
+- Dialogs stay above navigation, lock background scrolling, support Escape, and keep keyboard focus inside. Entry forms select a default category when opened.
+- Only the supported category icons are bundled; animated background layers were removed. Existing transaction APIs and database schema are unchanged.
+
+Budgets, savings goals and recurring bills retain their existing **device-local storage**. This update does not add cross-device synchronization for planning data. Browser simulator controls are available only in development at `/?dev`.
+
+Frontend checks (tested with Node.js 24):
+
+```bash
+cd client
+npm ci
+npm test
+npm run build
+```
+
+---
+
 ## 🌟 Key Features
 
 ### 1. Telegram Native Integration

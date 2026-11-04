@@ -55,9 +55,10 @@ export const AddTransactionScreen: React.FC = () => {
     if (!isAddTransactionOpen) return;
 
     const source = editingTransaction ?? prefillTemplate;
-    setType(editingTransaction?.type ?? prefillTemplate?.type ?? preselectedTransactionType);
+    const nextType = editingTransaction?.type ?? prefillTemplate?.type ?? preselectedTransactionType;
+    setType(nextType);
     setRawAmount(source ? String(source.amount) : '0');
-    setSelectedCategoryId(source?.category_id ?? null);
+    setSelectedCategoryId(source?.category_id ?? getCategoriesByType(nextType)[0]?.id ?? null);
     setNote(source?.note ?? '');
     setHashtags(source?.hashtags ?? []);
     setPaymentMethod(source?.payment_method ?? 'Card');
@@ -68,7 +69,7 @@ export const AddTransactionScreen: React.FC = () => {
         : new Date().toISOString().slice(0, 10),
     );
     setDateOption(editingTransaction ? 'custom' : 'today');
-  }, [isAddTransactionOpen, editingTransaction, prefillTemplate, preselectedTransactionType]);
+  }, [isAddTransactionOpen, editingTransaction, prefillTemplate, preselectedTransactionType, getCategoriesByType]);
 
   useEffect(() => {
     const validCats = getCategoriesByType(type);

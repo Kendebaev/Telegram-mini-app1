@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Delete, Equal } from 'lucide-react';
 import { useTelegram } from '../../context/TelegramContext';
+import { useTranslation } from '../../stores/settingsStore';
 
 interface TactileNumpadProps {
   value: string;
@@ -13,6 +14,7 @@ const keyBase =
 
 export const TactileNumpad: React.FC<TactileNumpadProps> = ({ value, onChange, onSubmit }) => {
   const { haptic } = useTelegram();
+  const { t } = useTranslation();
   const deleteTimerRef = useRef<number | null>(null);
 
   const handleKeyPress = (char: string) => {
@@ -122,7 +124,7 @@ export const TactileNumpad: React.FC<TactileNumpadProps> = ({ value, onChange, o
         onMouseDown={startHold}
         onMouseUp={endHold}
         onMouseLeave={endHold}
-        aria-label="Delete or hold to clear"
+        aria-label={t('delete')}
         className={`${keyBase} border-coral/25 bg-coral-soft text-coral`}
       >
         <Delete size={20} />
@@ -142,7 +144,7 @@ export const TactileNumpad: React.FC<TactileNumpadProps> = ({ value, onChange, o
       <button
         type="button"
         onClick={isExpression ? handleEvaluate : onSubmit}
-        aria-label={isExpression ? 'Evaluate' : 'Done'}
+        aria-label={t('done')}
         className="flex h-[50px] items-center justify-center rounded-2xl bg-gradient-to-tr from-accent to-accent-2 text-white shadow-glow transition-all active:scale-[0.94]"
       >
         {isExpression ? (

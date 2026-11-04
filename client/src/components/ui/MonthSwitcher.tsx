@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTelegram } from '../../context/TelegramContext';
+import { useTranslation } from '../../stores/settingsStore';
 
 interface MonthSwitcherProps {
   value: Date;
@@ -18,6 +19,7 @@ export const MonthSwitcher: React.FC<MonthSwitcherProps> = ({
   className = '',
 }) => {
   const { haptic } = useTelegram();
+  const { t } = useTranslation();
   const now = new Date();
   const atCurrentMonth =
     value.getFullYear() === now.getFullYear() && value.getMonth() === now.getMonth();
@@ -43,20 +45,20 @@ export const MonthSwitcher: React.FC<MonthSwitcherProps> = ({
       <button
         type="button"
         onClick={() => shift(-1)}
-        aria-label="Previous month"
-        className={`pressable flex h-8 w-8 items-center justify-center rounded-full border ${buttonClass}`}
+        aria-label={t('previous_month_button')}
+        className={`pressable flex h-10 w-10 items-center justify-center rounded-full border ${buttonClass}`}
       >
         <ChevronLeft size={15} />
       </button>
-      <span className={`min-w-[7.5rem] text-center text-[11px] font-bold capitalize tracking-tight ${labelClass}`}>
+      <span className={`min-w-[7.5rem] text-center text-xs font-medium capitalize tracking-tight ${labelClass}`}>
         {label}
       </span>
       <button
         type="button"
         onClick={() => shift(1)}
         disabled={atCurrentMonth}
-        aria-label="Next month"
-        className={`pressable flex h-8 w-8 items-center justify-center rounded-full border disabled:opacity-30 ${buttonClass}`}
+        aria-label={t('next_month_button')}
+        className={`pressable flex h-10 w-10 items-center justify-center rounded-full border disabled:opacity-30 ${buttonClass}`}
       >
         <ChevronRight size={15} />
       </button>

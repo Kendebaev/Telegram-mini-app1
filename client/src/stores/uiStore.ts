@@ -20,6 +20,8 @@ const DEFAULT_FILTERS: FilterState = {
 
 interface UIState {
   activeTab: ActiveTab;
+  viewMonth: Date;
+  setViewMonth: (month: Date) => void;
   isAddTransactionOpen: boolean;
   isManageCategoriesOpen: boolean;
   isSettingsOpen: boolean;
@@ -54,6 +56,8 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set) => ({
   activeTab: 'dashboard',
+  viewMonth: new Date(),
+  setViewMonth: (viewMonth) => set({ viewMonth }),
   isAddTransactionOpen: false,
   isManageCategoriesOpen: false,
   isSettingsOpen: false,

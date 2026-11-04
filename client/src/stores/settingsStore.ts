@@ -154,15 +154,17 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     },
 
     formatAmount: (amount: number, showSign = false): string => {
-      const { currencyConfig } = get();
-      const absAmount = Math.abs(amount).toLocaleString('en-US', {
+      const { currencyConfig, language } = get();
+      const absAmount = Math.abs(amount).toLocaleString(language === 'ru' ? 'ru-RU' : 'en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
 
       const symbol = currencyConfig.symbol;
       const prefix = amount < 0 ? '-' : showSign && amount > 0 ? '+' : '';
-      return `${prefix}${symbol}${absAmount}`;
+      return language === 'ru' || ['KZT', 'RUB'].includes(currencyConfig.code)
+        ? `${prefix}${absAmount}\u00a0${symbol}`
+        : `${prefix}${symbol}${absAmount}`;
     },
 
     t: (key: TranslationKey): string => {

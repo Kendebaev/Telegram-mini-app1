@@ -1,5 +1,5 @@
 import React from 'react';
-import * as LucideIcons from 'lucide-react';
+import { ICON_MAP } from '../../utils/categoryIcons';
 
 interface CategoryIconProps {
   name: string;
@@ -15,7 +15,7 @@ export const CategoryIcon: React.FC<CategoryIconProps> = ({
   className = '',
 }) => {
   // Lookup Lucide icon dynamically
-  const IconComponent = (LucideIcons as any)[name] || LucideIcons.HelpCircle;
+  const IconComponent = ICON_MAP[name] || ICON_MAP.HelpCircle;
 
   return <IconComponent size={size} color={color} className={className} />;
 };

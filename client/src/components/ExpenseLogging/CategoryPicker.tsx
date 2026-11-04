@@ -51,6 +51,7 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
             <motion.button
               key={cat.id}
               type="button"
+              aria-pressed={isSelected}
               whileTap={{ scale: 0.94 }}
               onClick={() => {
                 haptic.selection();
