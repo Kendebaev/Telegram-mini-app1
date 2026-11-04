@@ -153,6 +153,78 @@ export function monthlySeries(
   return result;
 }
 
+export type TrendPeriod = 'week' | 'month' | 'half-year';
+
+export interface TrendPoint {
+  label: string;
+  date: string;
+  previousDate: string;
+  income: number;
+  expense: number;
+  previousIncome: number;
+  previousExpense: number;
+}
+
+/** Compare matching elapsed days, never an unfinished month against a full one. */
+export function trendSeries(
+  txns: Transaction[],
+  period: TrendPeriod,
+  ref: Date,
+  now: Date = new Date(),
+  locale = 'en-US',
+): TrendPoint[] {
+  const current = monthKey(ref) === monthKey(now);
+  const end = current ? startOfDay(now) : startOfDay(endOfMonth(ref));
+  const byDay = new Map<string, { income: number; expense: number }>();
+  for (const tx of txns) {
+    const key = dayKey(new Date(tx.date));
+    const entry = byDay.get(key) ?? { income: 0, expense: 0 };
+    entry[tx.type] += Number(tx.amount) || 0;
+    byDay.set(key, entry);
+  }
+  const sum = (from: Date, to: Date) => {
+    let income = 0;
+    let expense = 0;
+    for (const [date, totals] of byDay) {
+      if (date >= dayKey(from) && date <= dayKey(to)) {
+        income += totals.income;
+        expense += totals.expense;
+      }
+    }
+    return { income: round2(income), expense: round2(expense) };
+  };
+  const point = (date: Date, previous: Date, label: string, monthly = false): TrendPoint => {
+    const cutoff = (d: Date) => monthly
+      ? new Date(d.getFullYear(), d.getMonth(), current && monthKey(date) === monthKey(ref)
+        ? Math.min(now.getDate(), daysInMonth(d)) : daysInMonth(d))
+      : d;
+    const a = sum(monthly ? startOfMonth(date) : date, cutoff(date));
+    // A previous month has no 31st when it only has 30 days.
+    const b = Number.isNaN(previous.getTime()) ? { income: 0, expense: 0 }
+      : sum(monthly ? startOfMonth(previous) : previous, cutoff(previous));
+    return { label, date: dayKey(date), previousDate: Number.isNaN(previous.getTime()) ? '' : dayKey(previous),
+      ...a, previousIncome: b.income, previousExpense: b.expense };
+  };
+  if (period === 'half-year') {
+    return Array.from({ length: 6 }, (_, i) => {
+      const date = addMonths(ref, i - 5);
+      return point(date, addMonths(date, -6), formatMonthShort(date, locale), true);
+    });
+  }
+  const length = period === 'week' ? 7 : end.getDate();
+  return Array.from({ length }, (_, i) => {
+    const date = period === 'week'
+      ? new Date(end.getFullYear(), end.getMonth(), end.getDate() - 6 + i)
+      : new Date(ref.getFullYear(), ref.getMonth(), i + 1);
+    const previous = period === 'week'
+      ? new Date(date.getFullYear(), date.getMonth(), date.getDate() - 7)
+      : i + 1 <= daysInMonth(addMonths(ref, -1))
+        ? new Date(ref.getFullYear(), ref.getMonth() - 1, i + 1) : new Date(NaN);
+    return point(date, previous, date.toLocaleDateString(locale, period === 'week'
+      ? { weekday: 'short' } : { day: 'numeric' }));
+  });
+}
+
 export interface CategorySpend {
   id: string;
   name: string;

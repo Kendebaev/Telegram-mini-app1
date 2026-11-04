@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, MotionConfig } from 'framer-motion';
 import { TelegramProvider } from './context/TelegramContext';
 import { Header } from './components/Navigation/Header';
 import { BottomNav } from './components/Navigation/BottomNav';
@@ -31,6 +31,10 @@ const MainLayout: React.FC = () => {
   const { fetchProfile } = useSettingsStore();
   const { fetchCategories } = useCategoryStore();
   const { fetchTransactions, fetchHashtagSuggestions } = useTransactionStore();
+  const language = useSettingsStore(s => s.language);
+
+  useEffect(() => { document.documentElement.lang = language; }, [language]);
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [activeTab]);
 
   useEffect(() => {
     fetchProfile();
@@ -46,7 +50,7 @@ const MainLayout: React.FC = () => {
       <MockTelegramDevBar />
       <Header />
 
-      <main className="relative z-10 mx-auto w-full max-w-md flex-1 px-4 pb-32 pt-2">
+      <main className="app-main relative z-10 mx-auto w-full max-w-md flex-1 px-5 pb-32 pt-4">
         <motion.div
           key={activeTab}
           initial={{ opacity: 0, y: 10 }}
@@ -73,8 +77,8 @@ const MainLayout: React.FC = () => {
 
 export default function App() {
   return (
-    <TelegramProvider>
+    <MotionConfig reducedMotion="user"><TelegramProvider>
       <MainLayout />
-    </TelegramProvider>
+    </TelegramProvider></MotionConfig>
   );
 }

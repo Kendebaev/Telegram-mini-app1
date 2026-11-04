@@ -9,7 +9,7 @@ export const MockTelegramDevBar: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // If actually running in real Telegram, do not show simulation bar
-  if (isInsideTelegram) return null;
+  if (isInsideTelegram || !import.meta.env.DEV || !new URLSearchParams(window.location.search).has('dev')) return null;
 
   return (
     <aside aria-label="Telegram Simulator Controls" className="sticky top-0 z-40 bg-gradient-to-r from-blue-900/95 via-indigo-900/95 to-blue-900/95 text-white text-[11px] backdrop-blur-md border-b border-blue-700/50 shadow-sm">

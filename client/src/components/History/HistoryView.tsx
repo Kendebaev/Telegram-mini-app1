@@ -25,7 +25,7 @@ import { IconTile } from '../ui/IconTile';
 import { Segmented } from '../ui/Segmented';
 import { Surface } from '../ui/Surface';
 import { dayKey, groupByDay, totalsOf } from '../../utils/finance';
-import { formatCategoryCount, getLocalizedCategoryName } from '../../utils/translations';
+import { formatCategoryCount, formatTransactionCount, getLocalizedCategoryName } from '../../utils/translations';
 import type { FilterState, Transaction } from '../../types/models';
 
 export const HistoryView: React.FC = () => {
@@ -111,7 +111,7 @@ export const HistoryView: React.FC = () => {
             {t('all_activity')}
           </h1>
           <p className="mt-1.5 text-[11px] font-medium text-muted">
-            {totals.count} {t('transactions_count')}
+            {formatTransactionCount(totals.count, language)}
           </p>
         </div>
         <button
@@ -199,6 +199,7 @@ export const HistoryView: React.FC = () => {
               >
                 {t('all_categories')}
               </Chip>
+              {filters.categoryId === 'uncategorized' && <Chip size="sm" active onClick={() => setFilterCategory('uncategorized')}>{t('other')}</Chip>}
               {categoryOptions.map((cat) => (
                 <Chip
                   key={cat.id}
@@ -274,6 +275,7 @@ export const HistoryView: React.FC = () => {
       </div>
 
       <AnimatePresence initial={false}>
+        {customActive && <p className="flex items-center gap-2 px-1 text-xs text-muted"><CalendarDays size={13} />{filters.startDate} — {filters.endDate}</p>}
         {showFilters && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}

@@ -93,7 +93,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const syncTelegramNativeHeader = (isDark: boolean) => {
     const tg = window.Telegram?.WebApp;
-    const colorHex = isDark ? '#080A0F' : '#F4F6F9';
+    const colorHex = isDark ? '#111714' : '#f5f6f3';
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', colorHex);
     try {
       if (tg?.setHeaderColor) {
         tg.setHeaderColor(colorHex);
@@ -151,6 +152,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (themeMode === 'system') {
           const effective = resolveEffectiveScheme('system');
           setColorScheme(effective);
+          document.documentElement.classList.toggle('dark', effective === 'dark');
           syncTelegramNativeHeader(effective === 'dark');
         }
       };
@@ -174,6 +176,16 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     syncTelegramNativeHeader(effective === 'dark');
+    if (themeMode !== 'system' || !window.matchMedia) return;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = () => {
+      const scheme = resolveEffectiveScheme('system');
+      setColorScheme(scheme);
+      document.documentElement.classList.toggle('dark', scheme === 'dark');
+      syncTelegramNativeHeader(scheme === 'dark');
+    };
+    media.addEventListener('change', handleSystemChange);
+    return () => media.removeEventListener('change', handleSystemChange);
   }, [themeMode]);
 
   const setThemeMode = (mode: 'dark' | 'light' | 'system') => {
@@ -351,7 +363,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       {children}
 
       {/* Simulated Telegram Native Main Button for browser testing when outside Telegram */}
-      {!isInsideTelegram && simulatedMainButton.isVisible && (
+      {!isInsideTelegram && import.meta.env.DEV && new URLSearchParams(window.location.search).has('dev') && simulatedMainButton.isVisible && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-tg-bg via-tg-bg/95 to-transparent z-40 max-w-lg mx-auto">
           <button
             type="button"
@@ -374,7 +386,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       )}
 
       {/* Simulated Telegram Native Back Button */}
-      {!isInsideTelegram && simulatedBackButtonVisible && (
+      {!isInsideTelegram && import.meta.env.DEV && new URLSearchParams(window.location.search).has('dev') && simulatedBackButtonVisible && (
         <button
           type="button"
           onClick={() => {

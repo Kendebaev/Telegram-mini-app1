@@ -99,7 +99,7 @@ export const PlanView: React.FC = () => {
     [breakdown],
   );
   const suggested = useMemo(() => suggestedBudget(transactions, now), [transactions]);
-  const effectiveBudget = monthlyBudget > 0 ? monthlyBudget : suggested;
+  const effectiveBudget = monthlyBudget;
   const snap = useMemo(
     () => budgetSnapshot(totals.expense, effectiveBudget, now, now),
     [totals.expense, effectiveBudget],
@@ -266,12 +266,12 @@ export const PlanView: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="px-1">
+      <div className="page-heading">
         <p className="eyebrow">{t('plan')}</p>
-        <h1 className="mt-0.5 font-display text-[22px] font-bold tracking-tight text-ink">
+        <h1>
           {t('plan_title')}
         </h1>
-        <p className="mt-1 text-[11px] text-muted">{t('plan_sub')}</p>
+        <p className="mt-2 text-sm text-muted">{t('plan_sub')}</p>
       </div>
 
       {/* Budget */}
@@ -308,9 +308,9 @@ export const PlanView: React.FC = () => {
             <div className="min-w-0 flex-1 space-y-1.5">
               <div>
                 <p className="font-display text-[22px] font-bold leading-none text-ink">
-                  {formatAmount(Math.max(0, snap.remaining))}
+                  {formatAmount(Math.abs(snap.remaining))}
                 </p>
-                <p className="mt-1 text-[10px] text-faint">{t('left_to_spend')}</p>
+                <p className="mt-1 text-[10px] text-faint">{t(snap.remaining < 0 ? 'budget_exceeded' : 'left_to_spend')}</p>
               </div>
               <div className="flex items-center gap-2 text-[10px]">
                 <span className="rounded-full bg-panel-inset px-2 py-0.5 font-semibold text-muted">
